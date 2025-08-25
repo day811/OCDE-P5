@@ -28,7 +28,7 @@ All components of the application are containerized using **Docker**, and an exp
 - `docker-compose.yml`: Container orchestration file
 - `README.md`: This documentation file
 - `docs/`: Documentation and technical diagrams directory
-- `notebooks/`: (Optional) Exploratory analysis or Jupyter notebooks
+- `notebooks/`: Exploratory analysis or Jupyter notebooks
 - `data/`: Source CSV files to be migrated[1]
 
 ## 5. Migration Workflow
