@@ -1,0 +1,24 @@
+version: "3.8"
+services:
+  mongo:
+    image: mongo:7
+    env_file:
+      - .env
+    restart: always
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+
+  importer:
+    build: ./docker
+    env_file:
+      - .env
+    volumes:
+      - ./data:/app/data:ro
+    depends_on:
+      - mongo
+    environment:
+      - MONGO_URI=mongodb://mongo:27017
+volumes:
+  mongo_data:
