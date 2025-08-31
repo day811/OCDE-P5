@@ -1,0 +1,105 @@
+{
+  "$jsonSchema": {
+    "bsonType": "object",
+    "required": [
+      "_id",
+      "admission",
+      "billing",
+      "care",
+      "patient"
+    ],
+    "properties": {
+      "_id": {
+        "bsonType": "objectId"
+      },
+      "admission": {
+        "bsonType": "object",
+        "properties": {
+          "Admission Type": {
+            "bsonType": "string"
+          },
+          "Date of Admission": {
+            "bsonType": "date"
+          },
+          "Discharge Date": {
+            "bsonType": "date"
+          },
+          "Doctor": {
+            "bsonType": "string"
+          },
+          "Hospital": {
+            "bsonType": "string"
+          },
+          "Room Number": {
+            "bsonType": "int"
+          }
+        },
+        "required": [
+          "Admission Type",
+          "Date of Admission",
+          "Discharge Date",
+          "Doctor",
+          "Hospital",
+          "Room Number"
+        ]
+      },
+      "billing": {
+        "bsonType": "object",
+        "properties": {
+          "Billing Amount": {
+            "bsonType": "decimal"
+          },
+          "Insurance Provider": {
+            "bsonType": "string"
+          }
+        },
+        "required": [
+          "Billing Amount",
+          "Insurance Provider"
+        ]
+      },
+      "care": {
+        "bsonType": "object",
+        "properties": {
+          "Medical Condition": {
+            "bsonType": "string"
+          },
+          "Medication": {
+            "bsonType": "string"
+          },
+          "Test Results": {
+            "bsonType": "string"
+          }
+        },
+        "required": [
+          "Medical Condition",
+          "Medication",
+          "Test Results"
+        ]
+      },
+      "patient": {
+        "bsonType": "object",
+        "properties": {
+          "Age": {
+            "bsonType": "int"
+          },
+          "Blood Type": {
+            "bsonType": "string"
+          },
+          "Gender": {
+            "bsonType": "string"
+          },
+          "Name": {
+            "bsonType": "string"
+          }
+        },
+        "required": [
+          "Age",
+          "Blood Type",
+          "Gender",
+          "Name"
+        ]
+      }
+    }
+  }
+}
