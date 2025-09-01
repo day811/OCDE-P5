@@ -18,5 +18,7 @@ services:
       - ./logs:/app/logs
     depends_on:
       - mongo
+    environment:
+      - DOCKMODE=True
 volumes:
   mongo_data:

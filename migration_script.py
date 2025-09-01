@@ -5,14 +5,18 @@ import pymongo
 import os
 from dotenv import load_dotenv
 import logging
+import hashlib
 
 
 load_dotenv()  # Charge les variables du .env
 
+dockmode = os.getenv("DOCKMODE", "0")
+dockmode =dockmode.lower() in ("true", "1", "yes")
+
 db_name = os.getenv("MONGO_DB_NAME", "test")
 username = os.getenv("MONGO_INITDB_ROOT_USERNAME")
 password = os.getenv("MONGO_INITDB_ROOT_PASSWORD")
-host = os.getenv("MONGO_HOST", "localhost")
+host = os.getenv("MONGO_HOST", "localhost") if dockmode else "localhost"
 port = int(os.getenv("MONGO_PORT", "27017"))
 debug_mode = os.getenv("MIGRATION_DEBUG")
 debug_mode = debug_mode.lower() in ("true", "1", "yes")
@@ -23,6 +27,7 @@ debug_limit = int(os.getenv("DEBUG_LIMIT"))
 debug_trace_only =os.getenv("DEBUG_TRACE_ONLY")
 debug_trace_only = debug_trace_only.lower() in ("true", "1", "yes")
 
+unic_subset = ['Name', 'Gender' , 'Date of Admission','Hospital','Doctor','Medical Condition']
 
 # Configuration du logger
 log_lvl = logging.INFO if not debug_mode else logging.DEBUG
@@ -165,17 +170,15 @@ def clean_df(df):
     return df
 
 def make_unic(df):
-    """Gère les doublons en fusionnant par moyenne d'âge, exclusion des doublons"""
-    subset_cols = df.columns.to_list()
-    if 'Age' in subset_cols:
-        subset_cols.remove('Age')
-
-    mask = df.duplicated(subset=subset_cols, keep='first')
+    """Gère les doublons en ne gardant que le dernier"""
+    mask = df.duplicated(subset=unic_subset, keep='last')
+    #df = df[~mask].sort_values(['Name'])if 'Age' in subset_cols:
     duplicated = df[mask]
-    if len(duplicated):
-        logging.warning("Doublons détectés. Fusion en gardant la moyenne d'âge des doublons.")
+    to_delete = len(duplicated)
+    if to_delete:
+        logging.warning(f"Doublons détectés. Traitement du seul dernier, suppression des {to_delete} éléments suivants.")
         logging.warning(duplicated.to_string())
-        df = df.groupby(subset_cols, dropna=False)['Age'].mean().reset_index()
+        df.drop(df[mask].index, inplace=True)
     else:
         logging.info("Aucun doublon détecté dans le dataset.")
     return df
@@ -199,27 +202,34 @@ def migrate_df(df):
 
     for i, row_dict in df.iterrows():
         try:
-            inject_row(row_dict.to_dict(), cnx)
+            upsert_row(row_dict.to_dict(), cnx)
             count_inserted += 1
         except Exception as e:
             logging.error(f"Erreur lors de l’insertion de la ligne {i}: {e}")
 
     logging.info(f"Migration terminée : {count_inserted} documents insérés sur {total} lignes traitées.")
 
-def inject_row(row_dict, db_cnx):
-    """Transforme une ligne CSV en document MongoDB et l'insère"""
+def generate_id(row_dict):
+    # Concaténation des champs, encodée en UTF-8 puis hashée
+    unique_string = "".join(str(row_dict[x]) for x in unic_subset)
+    return hashlib.sha256(unique_string.encode('utf-8')).hexdigest()
+
+def upsert_row(row_dict, db_cnx):
+    """Transforme une ligne CSV en document MongoDB et l'insère ou  la met à jour"""
     doc = {}
+    doc["_id"] = generate_id(row_dict)
     for subdoc, fields in document_map.items():
         fields_doc = {}
         for field in fields:
             fields_doc[field] = row_dict[field]
         doc[subdoc] = fields_doc
-
     logging.debug(f"Document construit : {doc}")
 
     if not debug_trace_only:
-        db_cnx.care.insert_one(doc)
-        logging.info(f"Document inséré : patient {doc['patient']['Name']} admission {doc['admission']['Date of Admission']}")
+        #db_cnx.care.insert_one(doc)
+        result = db_cnx.care.replace_one({"_id": doc["_id"]}, doc, upsert=True)
+        operation = 'inséré' if result.upserted_id else 'mis à jour'
+        logging.info(f"Document {doc['_id']} {operation} : patient {doc['patient']['Name']} admission {doc['admission']['Date of Admission']}")
 
 def get_db():
     """Connexion MongoDB via pymongo"""
