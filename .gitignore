@@ -1,6 +1,5 @@
 *.pdf
 .venv/*
-.env
 sources/*
 __pycache__
 *test*
