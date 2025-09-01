@@ -19,13 +19,13 @@ username = os.getenv("MONGO_INITDB_ROOT_USERNAME")
 password = os.getenv("MONGO_INITDB_ROOT_PASSWORD")
 host = os.getenv("MONGO_HOST", "localhost") if dockmode else "localhost"
 port = int(os.getenv("MONGO_PORT", "27017"))
-debug_mode = os.getenv("MIGRATION_DEBUG")
+debug_mode = os.getenv("MIGRATION_DEBUG", "0")
 debug_mode = debug_mode.lower() in ("true", "1", "yes")
 
-debug_start = int(os.getenv("DEBUG_START"))
-debug_limit = int(os.getenv("DEBUG_LIMIT"))
+debug_start = int(os.getenv("DEBUG_START"),0)
+debug_limit = int(os.getenv("DEBUG_LIMIT"),0)
 
-debug_trace_only =os.getenv("DEBUG_TRACE_ONLY")
+debug_trace_only =os.getenv("DEBUG_TRACE_ONLY","0")
 debug_trace_only = debug_trace_only.lower() in ("true", "1", "yes")
 
 unic_subset = ['Name', 'Gender' , 'Date of Admission','Hospital','Doctor','Medical Condition']
