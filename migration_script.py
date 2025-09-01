@@ -6,10 +6,29 @@ import os
 from dotenv import load_dotenv
 import logging
 
+
+load_dotenv()  # Charge les variables du .env
+
+db_name = os.getenv("MONGO_DB_NAME", "test")
+username = os.getenv("MONGO_INITDB_ROOT_USERNAME")
+password = os.getenv("MONGO_INITDB_ROOT_PASSWORD")
+host = os.getenv("MONGO_HOST", "localhost")
+port = int(os.getenv("MONGO_PORT", "27017"))
+debug_mode = os.getenv("MIGRATION_DEBUG")
+debug_mode = debug_mode.lower() in ("true", "1", "yes")
+
+debug_start = int(os.getenv("DEBUG_START"))
+debug_limit = int(os.getenv("DEBUG_LIMIT"))
+
+debug_trace_only =os.getenv("DEBUG_TRACE_ONLY")
+debug_trace_only = debug_trace_only.lower() in ("true", "1", "yes")
+
+
 # Configuration du logger
+log_lvl = logging.INFO if not debug_mode else logging.DEBUG
 logging.basicConfig(
-    filename='migration_healthcare.log',
-    level=logging.INFO,
+    filename='logs/migration_healthcare.log',
+    level=log_lvl,
     format='%(asctime)s - %(levelname)s - %(message)s'
 )
 
@@ -21,15 +40,6 @@ document_map = {
     'care': ['Medical Condition', 'Medication', 'Test Results']
 }
 
-load_dotenv()  # Charge les variables du .env
-
-db_name = os.getenv("MONGO_DB_NAME", "test")
-username = os.getenv("MONGO_INITDB_ROOT_USERNAME")
-password = os.getenv("MONGO_INITDB_ROOT_PASSWORD")
-host = os.getenv("MONGO_HOST", "localhost")
-port = int(os.getenv("MONGO_PORT", "27017"))
-
-trace_only = True  # Passer à False pour insérer en base
 
 def process_mask(df, mask, column, replace=False):
     """Gère les valeurs incorrectes en excluant ou remplaçant selon le paramètre replace"""
@@ -163,16 +173,16 @@ def make_unic(df):
     mask = df.duplicated(subset=subset_cols, keep='first')
     duplicated = df[mask]
     if len(duplicated):
-        logging.warning("Doublons détectés. Fusion en gardant la moyenne d'âge des doublons suivants.")
+        logging.warning("Doublons détectés. Fusion en gardant la moyenne d'âge des doublons.")
         logging.warning(duplicated.to_string())
         df = df.groupby(subset_cols, dropna=False)['Age'].mean().reset_index()
     else:
         logging.info("Aucun doublon détecté dans le dataset.")
     return df
 
-def migrate_df(df, start=0, limit=None):
+def migrate_df(df, start=0, limit=0):
     """Fonction principale de migration du DataFrame vers MongoDB"""
-    logging.info(f"Options d'exécution - start : {start} limit:{limit} trace_only:{trace_only}")
+    logging.info(f"Options d'exécution - start : {start} limit:{limit} trace_only:{debug_trace_only}")
 
 
     cnx = get_db()
@@ -188,7 +198,7 @@ def migrate_df(df, start=0, limit=None):
     logging.info(f"Total lignes après nettoyage et fusion : {total}")
 
     for i, row_dict in df.iterrows():
-        if limit is not None and i >= (start + limit):
+        if limit !=0 and i >= (start + limit):
             break
         if i >= start:
             try:
@@ -210,22 +220,28 @@ def inject_row(row_dict, db_cnx):
 
     logging.debug(f"Document construit : {doc}")
 
-    if not trace_only:
-        db_cnx.healthcare.insert_one(doc)
+    if not debug_trace_only:
+        db_cnx.care.insert_one(doc)
         logging.info(f"Document inséré : patient {doc['patient']['Name']} admission {doc['admission']['Date of Admission']}")
 
 def get_db():
     """Connexion MongoDB via pymongo"""
-    cnx_str = f"mongodb://{host}:{port}/"
+    cnx_str = f"mongodb://{username}:{password}@{host}:{port}/"
     client = pymongo.MongoClient(cnx_str)
     db_cnx = client[db_name]
     return db_cnx
 
 if __name__ == "__main__":
-    trace_only = True  # Passez à False pour activer l'insertion réelle
+    logging.info("*" * 50)
+    logging.info("")
     logging.info(f"Démarrage de la migration vers la DB : {db_name}")
 
     hcds = "data/healthcare_dataset.csv"
     df = pd.read_csv(hcds, dtype=str)
 
-    migrate_df(df, limit=2)  # limiter à 1 ligne pour test, retirez limit pour toutes les lignes
+    migrate_df(df, start=debug_start, limit=debug_limit)  # prend en compte les var d'environnement pour lancer le script
+    logging.info(f"Fin de la migration vers la DB : {db_name}")
+    logging.info("")
+    logging.info("*" * 50)
+    logging.info("")
+
