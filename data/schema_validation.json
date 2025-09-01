@@ -5,12 +5,12 @@
       "_id",
       "admission",
       "billing",
-      "care",
+      "observation",
       "patient"
     ],
     "properties": {
       "_id": {
-        "bsonType": "objectId"
+        "bsonType": "string"
       },
       "admission": {
         "bsonType": "object",
@@ -47,7 +47,7 @@
         "bsonType": "object",
         "properties": {
           "Billing Amount": {
-            "bsonType": "decimal"
+            "bsonType": "double"
           },
           "Insurance Provider": {
             "bsonType": "string"
@@ -58,7 +58,7 @@
           "Insurance Provider"
         ]
       },
-      "care": {
+      "observation": {
         "bsonType": "object",
         "properties": {
           "Medical Condition": {
@@ -95,7 +95,6 @@
         },
         "required": [
           "Age",
-          "Blood Type",
           "Gender",
           "Name"
         ]

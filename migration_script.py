@@ -6,6 +6,7 @@ import os
 from dotenv import load_dotenv
 import logging
 import hashlib
+import json
 
 
 load_dotenv()  # Charge les variables du .env
@@ -28,6 +29,7 @@ debug_trace_only =os.getenv("DEBUG_TRACE_ONLY")
 debug_trace_only = debug_trace_only.lower() in ("true", "1", "yes")
 
 unic_subset = ['Name', 'Gender' , 'Date of Admission','Hospital','Doctor','Medical Condition']
+db_collection_name = "care"
 
 # Configuration du logger
 log_lvl = logging.INFO if not debug_mode else logging.DEBUG
@@ -42,7 +44,7 @@ document_map = {
     'patient': ['Name', 'Age', 'Gender', "Blood Type"],
     'admission': ['Date of Admission', 'Doctor', 'Hospital', 'Room Number', 'Admission Type', 'Discharge Date'],
     'billing': ['Insurance Provider', 'Billing Amount'],
-    'care': ['Medical Condition', 'Medication', 'Test Results']
+    'observation': ['Medical Condition', 'Medication', 'Test Results']
 }
 
 
@@ -231,11 +233,36 @@ def upsert_row(row_dict, db_cnx):
         operation = 'inséré' if result.upserted_id else 'mis à jour'
         logging.info(f"Document {doc['_id']} {operation} : patient {doc['patient']['Name']} admission {doc['admission']['Date of Admission']}")
 
+def initialize_db(db):
+    if db_collection_name in db.list_collections():
+        logging.info(f"Collection '{db_collection_name}' existe déjà, aucune modification appliquée.")
+        # pas d'action : on arrête
+        return
+    try:
+        schema_file_path="data/schema_validation.json"
+        with open(schema_file_path, 'r') as f:
+            schema = json.load(f)
+        db.create_collection(db_collection_name, validator=schema)
+        logging.info(f"Collection '{db_collection_name}' créée avec validation JSON Schema.")
+    except pymongo.errors.CollectionInvalid as e:
+        logging.error(f"Erreur création collection : {e}")
+
+    coll = db[db_collection_name]
+    # Création des index seulement à la création
+    for sdoc_index in ["patient.Name","admission.Doctor","billing.Insurance Provider"]:
+        try:
+            coll.create_index(sdoc_index)
+            logging.info(f"Index '{sdoc_index}' créé.")
+        except pymongo.errors.OperationFailure:
+            logging.error(f"Echec de la création de l'index'{sdoc_index}'.")
+    
+
 def get_db():
     """Connexion MongoDB via pymongo"""
     cnx_str = f"mongodb://{username}:{password}@{host}:{port}/"
     client = pymongo.MongoClient(cnx_str)
     db_cnx = client[db_name]
+    initialize_db(db_cnx)
     return db_cnx
 
 if __name__ == "__main__":
