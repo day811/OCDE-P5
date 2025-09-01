@@ -180,9 +180,9 @@ def make_unic(df):
         logging.info("Aucun doublon détecté dans le dataset.")
     return df
 
-def migrate_df(df, start=0, limit=0):
+def migrate_df(df):
     """Fonction principale de migration du DataFrame vers MongoDB"""
-    logging.info(f"Options d'exécution - start : {start} limit:{limit} trace_only:{debug_trace_only}")
+    logging.info(f"Options d'exécution - start : {debug_start} limit:{debug_limit} trace_only:{debug_trace_only}")
 
 
     cnx = get_db()
@@ -198,14 +198,11 @@ def migrate_df(df, start=0, limit=0):
     logging.info(f"Total lignes après nettoyage et fusion : {total}")
 
     for i, row_dict in df.iterrows():
-        if limit !=0 and i >= (start + limit):
-            break
-        if i >= start:
-            try:
-                inject_row(row_dict.to_dict(), cnx)
-                count_inserted += 1
-            except Exception as e:
-                logging.error(f"Erreur lors de l’insertion de la ligne {i}: {e}")
+        try:
+            inject_row(row_dict.to_dict(), cnx)
+            count_inserted += 1
+        except Exception as e:
+            logging.error(f"Erreur lors de l’insertion de la ligne {i}: {e}")
 
     logging.info(f"Migration terminée : {count_inserted} documents insérés sur {total} lignes traitées.")
 
@@ -240,7 +237,7 @@ if __name__ == "__main__":
     df = pd.read_csv(hcds, dtype=str)
     if debug_start > 0 or debug_limit >0:
         df = df.iloc[debug_start:debug_start+debug_limit]
-    migrate_df(df, start=debug_start, limit=debug_limit)  # prend en compte les var d'environnement pour lancer le script
+    migrate_df(df)  # prend en compte les var d'environnement pour lancer le script
     logging.info(f"Fin de la migration vers la DB : {db_name}")
     logging.info("")
     logging.info("*" * 50)
