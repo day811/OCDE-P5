@@ -210,7 +210,7 @@ def migrate_df(df, start=0, limit=0):
     logging.info(f"Migration terminée : {count_inserted} documents insérés sur {total} lignes traitées.")
 
 def inject_row(row_dict, db_cnx):
-    """Transforme une ligne CSV en document MongoDB et insère"""
+    """Transforme une ligne CSV en document MongoDB et l'insère"""
     doc = {}
     for subdoc, fields in document_map.items():
         fields_doc = {}
@@ -238,7 +238,8 @@ if __name__ == "__main__":
 
     hcds = "data/healthcare_dataset.csv"
     df = pd.read_csv(hcds, dtype=str)
-
+    if debug_start > 0 or debug_limit >0:
+        df = df.iloc[debug_start:debug_start+debug_limit]
     migrate_df(df, start=debug_start, limit=debug_limit)  # prend en compte les var d'environnement pour lancer le script
     logging.info(f"Fin de la migration vers la DB : {db_name}")
     logging.info("")
