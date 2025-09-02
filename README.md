@@ -7,6 +7,7 @@ This project is dedicated to migrating a medical dataset from CSV files to a **M
 ## 2. Objectives
 
 - Automate migration of CSV data into MongoDB using `migration_script.py`
+- Create MongoDB validation schema and indexes at first run
 - Containerize MongoDB and the migration importer with Docker
 - Use Docker Compose to manage multi-container setup and volumes
 - Provide clear documentation for usage, configuration, and deployment
@@ -21,7 +22,7 @@ This project is dedicated to migrating a medical dataset from CSV files to a **M
 
 ## 4. Project Structure
 
-- `migration_script.py`: Python script performing the CSV to MongoDB migration
+- `migration_script.py`: Python script performing the CSV to MongoDB migration and configuration
 - `requirements.txt`: Python dependency list for the migration script
 - `Dockerfile`: Defines the Python environment for the migration script container
 - `docker-compose.yml`: Orchestrates the MongoDB service and the importer container
@@ -42,10 +43,15 @@ The `importer` service depends on the `mongo` container, ensuring MongoDB is rea
 
 ### Prepare environment variables
 
-Change the `.env` file in the project root if needed:
+Change the `.env` file in the project to customize and setup security access:
+
 
 ```bash
+
+MONGO_INITDB_ROOT_USERNAME=root
+
 MONGO_PORT=27017
+
 ```
 
 Adjust port mapping as needed.
