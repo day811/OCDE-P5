@@ -16,7 +16,7 @@ dockmode = dockmode.lower() in ["true", "1", "yes"]
 dbname = os.getenv("MONGO_DB_NAME", "test")
 username = os.getenv("MONGO_INITDB_ROOT_USERNAME","admin")
 password = os.getenv("MONGO_INITDB_ROOT_PASSWORD", "secret")
-host = os.getenv("MONGO_HOST", "localhost") if dockmode else "localhost"
+host = os.getenv("MONGO_HOST", "mongo") 
 port = int(os.getenv("MONGO_PORT", 27017))
 
 debug_mode = os.getenv("MIGRATION_DEBUG", "0")
@@ -25,6 +25,14 @@ debug_start = int(os.getenv("DEBUG_START", 0))
 debug_limit = int(os.getenv("DEBUG_LIMIT", 0))
 debug_traceonly = os.getenv("DEBUG_TRACE_ONLY", "1")
 debug_traceonly = debug_traceonly.lower() in ["true", "1", "yes"]
+
+# if needed overwrite settings in interactive/test mode 
+if not dockmode:
+    host = "localhost"
+    debug_start = 0
+    debug_limit = 10
+    debug_traceonly = True
+
 
 unic_subset = ["Name", "Gender", "Date of Admission", "Hospital", "Doctor", "Medical Condition"]
 db_collection_name = "care"
