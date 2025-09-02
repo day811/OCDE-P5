@@ -8,275 +8,258 @@ import logging
 import hashlib
 import json
 
+load_dotenv()
 
-load_dotenv()  # Charge les variables du .env
-
+# Loads environment variables from .env
 dockmode = os.getenv("DOCKMODE", "0")
-dockmode =dockmode.lower() in ("true", "1", "yes")
-
-db_name = os.getenv("MONGO_DB_NAME", "test")
+dockmode = dockmode.lower() in ["true", "1", "yes"]
+dbname = os.getenv("MONGODBNAME", "test")
 username = os.getenv("MONGO_INITDB_ROOT_USERNAME")
 password = os.getenv("MONGO_INITDB_ROOT_PASSWORD")
-host = os.getenv("MONGO_HOST", "localhost") if dockmode else "localhost"
-port = int(os.getenv("MONGO_PORT", "27017"))
-debug_mode = os.getenv("MIGRATION_DEBUG", "0")
-debug_mode = debug_mode.lower() in ("true", "1", "yes")
+host = os.getenv("MONGOHOST", "localhost") if dockmode else "localhost"
+port = int(os.getenv("MONGOPORT", 27017))
 
-debug_start = int(os.getenv("DEBUG_START"),0)
-debug_limit = int(os.getenv("DEBUG_LIMIT"),0)
+debugmode = os.getenv("MIGRATIONDEBUG", "0")
+debugmode = debugmode.lower() in ["true", "1", "yes"]
+debugstart = int(os.getenv("DEBUGSTART", 0))
+debuglimit = int(os.getenv("DEBUGLIMIT", 0))
+debugtraceonly = os.getenv("DEBUGTRACEONLY", "0")
+debugtraceonly = debugtraceonly.lower() in ["true", "1", "yes"]
 
-debug_trace_only =os.getenv("DEBUG_TRACE_ONLY","0")
-debug_trace_only = debug_trace_only.lower() in ("true", "1", "yes")
+unicsubset = ["Name", "Gender", "Date of Admission", "Hospital", "Doctor", "Medical Condition"]
+dbcollectionname = "care"
 
-unic_subset = ['Name', 'Gender' , 'Date of Admission','Hospital','Doctor','Medical Condition']
-db_collection_name = "care"
-
-# Configuration du logger
-log_lvl = logging.INFO if not debug_mode else logging.DEBUG
+# Logger configuration
+loglvl = logging.INFO if not debugmode else logging.DEBUG
 logging.basicConfig(
-    filename='logs/migration_healthcare.log',
-    level=log_lvl,
-    format='%(asctime)s - %(levelname)s - %(message)s'
-)
+    filename="logs/migration_healthcare.log", 
+    level=loglvl, 
+    format="%(asctime)s - %(levelname)s - %(message)s")
+logging.info("Logger configured")
 
-# Mapping des champs CSV vers sous-documents MongoDB
-document_map = {
-    'patient': ['Name', 'Age', 'Gender', "Blood Type"],
-    'admission': ['Date of Admission', 'Doctor', 'Hospital', 'Room Number', 'Admission Type', 'Discharge Date'],
-    'billing': ['Insurance Provider', 'Billing Amount'],
-    'observation': ['Medical Condition', 'Medication', 'Test Results']
+documentmap = {
+    "patient": ["Name", "Age", "Gender", "Blood Type"],
+    "admission": ["Date of Admission", "Doctor", "Hospital", "Room Number", "Admission Type", "Discharge Date"],
+    "billing": ["Insurance Provider", "Billing Amount"],
+    "observation": ["Medical Condition", "Medication", "Test Results"],
 }
 
-
 def process_mask(df, mask, column, replace=False):
-    """Gère les valeurs incorrectes en excluant ou remplaçant selon le paramètre replace"""
+    # Handles incorrect values by excluding or replacing depending on parameter
     rows_to_log = df[mask]
     if len(rows_to_log):
-        logging.warning(f"Valeurs incorrectes détectées dans la colonne '{column}'.")
-        logging.warning(f"Lignes concernées:\n{rows_to_log}")
+        logging.warning(f"Incorrect values detected in column {column}.")
+        logging.warning(f"Concerned rows: {rows_to_log}")
         if replace is not False:
             df.loc[mask, column] = replace
-            logging.info(f"Remplacement de la colonne '{column}' par '{replace}' pour les lignes ci-dessus.")
+            logging.info(f"Replacement of column {column} with {replace} for above rows.")
         else:
             df.drop(df[mask].index, inplace=True)
-            logging.info(f"Exclusion des lignes avec des valeurs incorrectes dans '{column}'.")
+            logging.info(f"Excluding rows with incorrect values in {column}.")
     else:
-        logging.info(f"Aucune anomalie détectée dans la colonne '{column}'.")
+        logging.info(f"No anomaly detected in column {column}.")
 
 def convert_to_int(val, dft=None):
     try:
         return int(val)
     except (ValueError, TypeError) as e:
-        logging.error(f"Erreur conversion int pour valeur '{val}': {e}")
+        logging.error(f"Error converting to int for value {val}: {e}")
         return dft
 
 def convert_to_float(val, dft=None):
     try:
-        return float(val)  # Compatible MongoDB
+        return float(val)  # Compatible with MongoDB
     except (ValueError, TypeError) as e:
-        logging.error(f"Erreur conversion float pour valeur '{val}': {e}")
+        logging.error(f"Error converting to float for value {val}: {e}")
         return dft
 
-def convert_to_date(val, format='%Y-%m-%d', dft=None):
+def convert_to_date(val, format="%Y-%m-%d", dft=None):
     try:
         if pd.isna(val):
             return dft
         return datetime.strptime(val, format)
     except (ValueError, TypeError) as e:
-        logging.error(f"Erreur conversion date pour valeur '{val}': {e}")
+        logging.error(f"Error converting to date for value {val}: {e}")
         return dft
 
 def clean_df(df):
-    """Nettoie et valide le dataframe"""
-    # Name
-    col = 'Name'
+    # Cleans and validates the DataFrame
+    logging.info("Mapping CSV fields to MongoDB sub-documents...")
+    col = "Name"
     mask = df[col].isna()
     process_mask(df, mask, col)
+    logging.info("Processed Name...")
 
-    # Age
-    col = 'Age'
+    col = "Age"
     df[col] = df[col].apply(convert_to_int)
-    mask = (df[col] < 0) | (df[col] > 120) | (df[col].isna())
+    mask = (df[col] < 0) | (df[col] > 120) | df[col].isna()
     process_mask(df, mask, col)
+    logging.info("Processed Age...")
 
-    # Gender
-    col = 'Gender'
+    col = "Gender"
     mask = ~df[col].isin(["Male", "Female"])
     process_mask(df, mask, col, replace="Other")
+    logging.info("Processed Gender...")
 
-    # Blood Type
-    col = 'Blood Type'
-    possible_types = ["A+", "A-", "AB+", "AB-", "B+", "B-", "O+", "O-"]
+    col = "Blood Type"
+    possible_types = ["A", "A-", "AB", "AB-", "B", "B-", "O", "O-"]
     mask = ~df[col].isin(possible_types)
     process_mask(df, mask, col, replace="NA")
+    logging.info("Processed Blood Type...")
 
-    # Date of Admission
-    col = 'Date of Admission'
+    col = "Date of Admission"
     df[col] = df[col].apply(convert_to_date)
     mask = df[col].isna()
     process_mask(df, mask, col)
+    logging.info("Processed Date of Admission...")
 
-    # Doctor
     col = "Doctor"
     mask = df[col].isna()
     process_mask(df, mask, col, replace="NA")
+    logging.info("Processed Doctor...")
 
-    # Hospital
     col = "Hospital"
     mask = df[col].isna()
     process_mask(df, mask, col, replace="NA")
+    logging.info("Processed Hospital...")
 
-    # Room Number
     col = "Room Number"
     df[col] = df[col].apply(convert_to_int)
     mask = df[col].isna()
     process_mask(df, mask, col, replace=0)
+    logging.info("Processed Room Number...")
 
-    # Admission Type
     col = "Admission Type"
     mask = df[col].isna()
     process_mask(df, mask, col)
+    logging.info("Processed Admission Type...")
 
-    # Discharge Date
-    col = 'Discharge Date'
+    col = "Discharge Date"
     df[col] = df[col].apply(convert_to_date)
     mask = df[col].isna()
     process_mask(df, mask, col, replace=None)
+    logging.info("Processed Discharge Date...")
 
-    # Insurance Provider
     col = "Insurance Provider"
     mask = df[col].isna()
     process_mask(df, mask, col, replace="NA")
+    logging.info("Processed Insurance Provider...")
 
-    # Billing Amount
     col = "Billing Amount"
     df[col] = df[col].apply(convert_to_float).round(2)
     mask = df[col].isna()
     process_mask(df, mask, col)
+    logging.info("Processed Billing Amount...")
 
-    # Medical Condition
     col = "Medical Condition"
     mask = df[col].isna()
     process_mask(df, mask, col)
+    logging.info("Processed Medical Condition...")
 
-    # Medication
     col = "Medication"
     mask = df[col].isna()
     process_mask(df, mask, col, replace="NA")
+    logging.info("Processed Medication...")
 
-    # Test Results
     col = "Test Results"
     mask = df[col].isna()
     process_mask(df, mask, col)
+    logging.info("Processed Test Results...")
 
     return df
 
-def make_unic(df):
-    """Gère les doublons en ne gardant que le dernier"""
-    mask = df.duplicated(subset=unic_subset, keep='last')
-    #df = df[~mask].sort_values(['Name'])if 'Age' in subset_cols:
-    duplicated = df[mask]
-    to_delete = len(duplicated)
-    if to_delete:
-        logging.warning(f"Doublons détectés. Traitement du seul dernier, suppression des {to_delete} éléments suivants.")
+def make_unic_df(df):
+    # Handles duplicates by keeping only the latest
+    mask = df.duplicated(subset=unicsubset, keep="last")
+    duplicated = df[mask].sort_values("Name")
+    todelete = len(duplicated)
+    if todelete:
+        logging.warning("Duplicates detected. Only latest is retained, suppressing following elements.")
         logging.warning(duplicated.to_string())
-        df.drop(df[mask].index, inplace=True)
+        df.drop(duplicated.index, inplace=True)
     else:
-        logging.info("Aucun doublon détecté dans le dataset.")
+        logging.info("No duplicate detected in the dataset.")
     return df
 
 def migrate_df(df):
-    """Fonction principale de migration du DataFrame vers MongoDB"""
-    logging.info(f"Options d'exécution - start : {debug_start} limit:{debug_limit} trace_only:{debug_trace_only}")
-
-
+    # Main function for migrating DataFrame to MongoDB
+    logging.info(f"Execution options - start: {debugstart}, limit: {debuglimit}, traceonly: {debugtraceonly}")
     cnx = get_db()
-
-    logging.info(f"Nettoyage des données avant migration...")
+    logging.info("Cleaning data before migration...")
     df = clean_df(df)
-
-    logging.info(f"Traitement des doublons...")
-    df = make_unic(df)
-
+    logging.info("Processing duplicates...")
+    df = make_unic_df(df)
     count_inserted = 0
     total = len(df)
-    logging.info(f"Total lignes après nettoyage et fusion : {total}")
-
-    for i, row_dict in df.iterrows():
+    logging.info(f"Total rows after cleaning and merging: {total}")
+    for i, row in df.iterrows():
         try:
-            upsert_row(row_dict.to_dict(), cnx)
+            upsert_row(row.to_dict(), cnx)
             count_inserted += 1
         except Exception as e:
-            logging.error(f"Erreur lors de l’insertion de la ligne {i}: {e}")
+            logging.error(f"Error inserting row {i}: {e}")
+    logging.info(f"Migration complete: {count_inserted} documents inserted out of {total} rows processed.")
 
-    logging.info(f"Migration terminée : {count_inserted} documents insérés sur {total} lignes traitées.")
+def generate_id(rowdict):
+    # Concatenate fields, encode as UTF-8, then hash
+    unique_string = "_".join(str(rowdict[x]) for x in unicsubset)
+    return hashlib.sha256(unique_string.encode("utf-8")).hexdigest()
 
-def generate_id(row_dict):
-    # Concaténation des champs, encodée en UTF-8 puis hashée
-    unique_string = "".join(str(row_dict[x]) for x in unic_subset)
-    return hashlib.sha256(unique_string.encode('utf-8')).hexdigest()
-
-def upsert_row(row_dict, db_cnx):
-    """Transforme une ligne CSV en document MongoDB et l'insère ou  la met à jour"""
+def upsert_row(rowdict, dbcnx):
+    # Transforms a CSV row into a MongoDB document and inserts or updates
     doc = {}
-    doc["_id"] = generate_id(row_dict)
-    for subdoc, fields in document_map.items():
-        fields_doc = {}
+    docid = generate_id(rowdict)
+    for subdoc, fields in documentmap.items():
+        fieldsdoc = {}
         for field in fields:
-            fields_doc[field] = row_dict[field]
-        doc[subdoc] = fields_doc
-    logging.debug(f"Document construit : {doc}")
-
-    if not debug_trace_only:
-        #db_cnx.care.insert_one(doc)
-        result = db_cnx.care.replace_one({"_id": doc["_id"]}, doc, upsert=True)
-        operation = 'inséré' if result.upserted_id else 'mis à jour'
-        logging.info(f"Document {doc['_id']} {operation} : patient {doc['patient']['Name']} admission {doc['admission']['Date of Admission']}")
+            fieldsdoc[field] = rowdict[field]
+        doc[subdoc] = fieldsdoc
+    logging.debug(f"Document constructed: {doc}")
+    if not debugtraceonly:
+        result = dbcnx.care.replace_one({"_id": docid}, doc, upsert=True)
+        operation = "inserted" if result.upserted_id else "updated"
+        logging.info(f"Document {docid} {operation}: patient {doc['patient']['Name']} admission {doc['admission']['Date of Admission']}")
+    return
 
 def initialize_db(db):
-    if db_collection_name in db.list_collections():
-        logging.info(f"Collection '{db_collection_name}' existe déjà, aucune modification appliquée.")
-        # pas d'action : on arrête
+    # Collection initialization and index creation
+    if dbcollectionname in db.list_collection_names():
+        logging.info(f"Collection {dbcollectionname} already exists, no modification applied.")
         return
     try:
-        schema_file_path="data/schema_validation.json"
-        with open(schema_file_path, 'r') as f:
+        schema_filepath = "data/schema_validation.json"
+        with open(schema_filepath, "r") as f:
             schema = json.load(f)
-        db.create_collection(db_collection_name, validator=schema)
-        logging.info(f"Collection '{db_collection_name}' créée avec validation JSON Schema.")
+        db.create_collection(dbcollectionname, validator=schema)
+        logging.info(f"Collection {dbcollectionname} created with JSON Schema validation.")
     except pymongo.errors.CollectionInvalid as e:
-        logging.error(f"Erreur création collection : {e}")
-
-    coll = db[db_collection_name]
-    # Création des index seulement à la création
-    for sdoc_index in ["patient.Name","admission.Doctor","billing.Insurance Provider"]:
+        logging.error(f"Error creating collection: {e}")
+        return
+    coll = db[dbcollectionname]
+    for sdocindex in ["patient.Name", "admission.Doctor", "billing.Insurance Provider"]:
         try:
-            coll.create_index(sdoc_index)
-            logging.info(f"Index '{sdoc_index}' créé.")
+            coll.create_index(sdocindex)
+            logging.info(f"Index {sdocindex} created.")
         except pymongo.errors.OperationFailure:
-            logging.error(f"Echec de la création de l'index'{sdoc_index}'.")
-    
+            logging.error(f"Failed to create index {sdocindex}.")
 
 def get_db():
-    """Connexion MongoDB via pymongo"""
-    cnx_str = f"mongodb://{username}:{password}@{host}:{port}/"
-    client = pymongo.MongoClient(cnx_str)
-    db_cnx = client[db_name]
-    initialize_db(db_cnx)
-    return db_cnx
+    # MongoDB connection via pymongo
+    cnxstr = f"mongodb://{username}:{password}@{host}:{port}/"
+    client = pymongo.MongoClient(cnxstr)
+    dbcnx = client[dbname]
+    initialize_db(dbcnx)
+    return dbcnx
 
 if __name__ == "__main__":
-    logging.info("*" * 50)
-    logging.info("")
-    logging.info(f"Démarrage de la migration vers la DB : {db_name}")
-
+    logging.info("="*50)
+    logging.info(f"Starting migration to DB {dbname}")
     hcds = "data/healthcare_dataset.csv"
     df = pd.read_csv(hcds, dtype=str)
-    if debug_start > 0 or debug_limit >0:
-        df = df.iloc[debug_start:debug_start+debug_limit]
-    migrate_df(df)  # prend en compte les var d'environnement pour lancer le script
-    logging.info(f"Fin de la migration vers la DB : {db_name}")
+    if debugstart or debuglimit:
+        df = df.iloc[debugstart:debugstart+debuglimit]
+    migrate_df(df)
+    logging.info(f"End of migration to DB {dbname}")
     logging.info("")
-    logging.info("*" * 50)
+    logging.info("="*50)
     logging.info("")
-
