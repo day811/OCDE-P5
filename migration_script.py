@@ -13,17 +13,17 @@ load_dotenv()
 # Loads environment variables from .env
 dockmode = os.getenv("DOCKMODE", "0")
 dockmode = dockmode.lower() in ["true", "1", "yes"]
-dbname = os.getenv("MONGODBNAME", "test")
+dbname = os.getenv("MONGO_DB_NAME", "test")
 username = os.getenv("MONGO_INITDB_ROOT_USERNAME","admin")
 password = os.getenv("MONGO_INITDB_ROOT_PASSWORD", "secret")
-host = os.getenv("MONGOHOST", "localhost") if dockmode else "localhost"
-port = int(os.getenv("MONGOPORT", 27017))
+host = os.getenv("MONGO_HOST", "localhost") if dockmode else "localhost"
+port = int(os.getenv("MONGO_PORT", 27017))
 
-debug_mode = os.getenv("MIGRATIONDEBUG", "0")
+debug_mode = os.getenv("MIGRATION_DEBUG", "0")
 debug_mode = debug_mode.lower() in ["true", "1", "yes"]
-debug_start = int(os.getenv("DEBUGSTART", 0))
-debug_limit = int(os.getenv("DEBUGLIMIT", 0))
-debug_traceonly = os.getenv("DEBUGTRACEONLY", "1")
+debug_start = int(os.getenv("DEBUG_START", 0))
+debug_limit = int(os.getenv("DEBUG_LIMIT", 0))
+debug_traceonly = os.getenv("DEBUG_TRACE_ONLY", "1")
 debug_traceonly = debug_traceonly.lower() in ["true", "1", "yes"]
 
 unic_subset = ["Name", "Gender", "Date of Admission", "Hospital", "Doctor", "Medical Condition"]
@@ -102,7 +102,7 @@ def clean_df(df):
     logging.info("Processed Gender...")
 
     col = "Blood Type"
-    possible_types = ["A", "A-", "AB", "AB-", "B", "B-", "O", "O-"]
+    possible_types = ["A+", "A-", "AB+", "AB-", "B+", "B-", "O+", "O-"]
     mask = ~df[col].isin(possible_types)
     process_mask(df, mask, col, replace="NA")
     logging.info("Processed Blood Type...")
