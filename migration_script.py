@@ -14,23 +14,23 @@ load_dotenv()
 dockmode = os.getenv("DOCKMODE", "0")
 dockmode = dockmode.lower() in ["true", "1", "yes"]
 dbname = os.getenv("MONGODBNAME", "test")
-username = os.getenv("MONGO_INITDB_ROOT_USERNAME")
-password = os.getenv("MONGO_INITDB_ROOT_PASSWORD")
+username = os.getenv("MONGO_INITDB_ROOT_USERNAME","admin")
+password = os.getenv("MONGO_INITDB_ROOT_PASSWORD", "secret")
 host = os.getenv("MONGOHOST", "localhost") if dockmode else "localhost"
 port = int(os.getenv("MONGOPORT", 27017))
 
-debugmode = os.getenv("MIGRATIONDEBUG", "0")
-debugmode = debugmode.lower() in ["true", "1", "yes"]
-debugstart = int(os.getenv("DEBUGSTART", 0))
-debuglimit = int(os.getenv("DEBUGLIMIT", 0))
-debugtraceonly = os.getenv("DEBUGTRACEONLY", "0")
-debugtraceonly = debugtraceonly.lower() in ["true", "1", "yes"]
+debug_mode = os.getenv("MIGRATIONDEBUG", "0")
+debug_mode = debug_mode.lower() in ["true", "1", "yes"]
+debug_start = int(os.getenv("DEBUGSTART", 0))
+debug_limit = int(os.getenv("DEBUGLIMIT", 0))
+debug_traceonly = os.getenv("DEBUGTRACEONLY", "1")
+debug_traceonly = debug_traceonly.lower() in ["true", "1", "yes"]
 
-unicsubset = ["Name", "Gender", "Date of Admission", "Hospital", "Doctor", "Medical Condition"]
-dbcollectionname = "care"
+unic_subset = ["Name", "Gender", "Date of Admission", "Hospital", "Doctor", "Medical Condition"]
+db_collection_name = "care"
 
 # Logger configuration
-loglvl = logging.INFO if not debugmode else logging.DEBUG
+loglvl = logging.INFO if not debug_mode else logging.DEBUG
 logging.basicConfig(
     filename="logs/migration_healthcare.log", 
     level=loglvl, 
@@ -170,10 +170,10 @@ def clean_df(df):
 
 def make_unic_df(df):
     # Handles duplicates by keeping only the latest
-    mask = df.duplicated(subset=unicsubset, keep="last")
+    mask = df.duplicated(subset=unic_subset, keep="last")
     duplicated = df[mask].sort_values("Name")
-    todelete = len(duplicated)
-    if todelete:
+    to_delete = len(duplicated)
+    if to_delete:
         logging.warning("Duplicates detected. Only latest is retained, suppressing following elements.")
         logging.warning(duplicated.to_string())
         df.drop(duplicated.index, inplace=True)
@@ -183,7 +183,7 @@ def make_unic_df(df):
 
 def migrate_df(df):
     # Main function for migrating DataFrame to MongoDB
-    logging.info(f"Execution options - start: {debugstart}, limit: {debuglimit}, traceonly: {debugtraceonly}")
+    logging.info(f"Execution options - start: {debug_start}, limit: {debug_limit}, traceonly: {debug_traceonly}")
     cnx = get_db()
     logging.info("Cleaning data before migration...")
     df = clean_df(df)
@@ -202,40 +202,40 @@ def migrate_df(df):
 
 def generate_id(rowdict):
     # Concatenate fields, encode as UTF-8, then hash
-    unique_string = "_".join(str(rowdict[x]) for x in unicsubset)
+    unique_string = "_".join(str(rowdict[x]) for x in unic_subset)
     return hashlib.sha256(unique_string.encode("utf-8")).hexdigest()
 
 def upsert_row(rowdict, dbcnx):
     # Transforms a CSV row into a MongoDB document and inserts or updates
     doc = {}
-    docid = generate_id(rowdict)
+    doc_id = generate_id(rowdict)
     for subdoc, fields in documentmap.items():
         fieldsdoc = {}
         for field in fields:
             fieldsdoc[field] = rowdict[field]
         doc[subdoc] = fieldsdoc
     logging.debug(f"Document constructed: {doc}")
-    if not debugtraceonly:
-        result = dbcnx.care.replace_one({"_id": docid}, doc, upsert=True)
+    if not debug_traceonly:
+        result = dbcnx.care.replace_one({"_id": doc_id}, doc, upsert=True)
         operation = "inserted" if result.upserted_id else "updated"
-        logging.info(f"Document {docid} {operation}: patient {doc['patient']['Name']} admission {doc['admission']['Date of Admission']}")
+        logging.info(f"Document {doc_id} {operation}: patient {doc['patient']['Name']} admission {doc['admission']['Date of Admission']}")
     return
 
 def initialize_db(db):
     # Collection initialization and index creation
-    if dbcollectionname in db.list_collection_names():
-        logging.info(f"Collection {dbcollectionname} already exists, no modification applied.")
+    if db_collection_name in db.list_collection_names():
+        logging.info(f"Collection {db_collection_name} already exists, no modification applied.")
         return
     try:
         schema_filepath = "data/schema_validation.json"
         with open(schema_filepath, "r") as f:
             schema = json.load(f)
-        db.create_collection(dbcollectionname, validator=schema)
-        logging.info(f"Collection {dbcollectionname} created with JSON Schema validation.")
+        db.create_collection(db_collection_name, validator=schema)
+        logging.info(f"Collection {db_collection_name} created with JSON Schema validation.")
     except pymongo.errors.CollectionInvalid as e:
         logging.error(f"Error creating collection: {e}")
         return
-    coll = db[dbcollectionname]
+    coll = db[db_collection_name]
     for sdocindex in ["patient.Name", "admission.Doctor", "billing.Insurance Provider"]:
         try:
             coll.create_index(sdocindex)
@@ -248,7 +248,8 @@ def get_db():
     cnxstr = f"mongodb://{username}:{password}@{host}:{port}/"
     client = pymongo.MongoClient(cnxstr)
     dbcnx = client[dbname]
-    initialize_db(dbcnx)
+    if not debug_traceonly :
+        initialize_db(dbcnx)
     return dbcnx
 
 if __name__ == "__main__":
@@ -256,8 +257,8 @@ if __name__ == "__main__":
     logging.info(f"Starting migration to DB {dbname}")
     hcds = "data/healthcare_dataset.csv"
     df = pd.read_csv(hcds, dtype=str)
-    if debugstart or debuglimit:
-        df = df.iloc[debugstart:debugstart+debuglimit]
+    if debug_start or debug_limit:
+        df = df.iloc[debug_start:debug_start+debug_limit]
     migrate_df(df)
     logging.info(f"End of migration to DB {dbname}")
     logging.info("")
