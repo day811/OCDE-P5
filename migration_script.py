@@ -51,6 +51,56 @@ documentmap = {
     "billing": ["Insurance Provider", "Billing Amount"],
     "observation": ["Medical Condition", "Medication", "Test Results"],
 }
+administrative_collections = ["patient", "admission", "billing"]
+healthcare_collections = ["patient","admission","observation"]
+accounting_collections = "billing"
+
+roles = [
+    {   
+        "createRole": "healthcareOperator",
+        "privileges": [
+            { "resource": {"db": f"{dbname}", "collection": "patient"}, "actions": ["find"] },
+            { "resource": {"db": f"{dbname}", "collection": "admission"}, "actions": ["find"] },
+            { "resource": {"db": f"{dbname}", "collection": "observation"}, "actions": ["find"] },
+        ],
+        "roles": []},
+    {
+        "createRole": "healthcareManager",
+        "privileges": [
+            { "resource": {"db": f"{dbname}", "collection": "observation"}, "actions": ["find", "insert", "update", "remove"] },
+            { "resource": {"db": f"{dbname}", "collection": "patient"}, "actions": ["find"] },            
+            { "resource": {"db": f"{dbname}", "collection": "admission"}, "actions": ["find"] },            
+        ],
+        "roles": []
+    },
+    {
+        "createRole": "administrativeOperator",
+        "privileges": [
+            { "resource": {"db": f"{dbname}", "collection": "patient"}, "actions": ["find"] },
+            { "resource": {"db": f"{dbname}", "collection": "admission"}, "actions": ["find"] },
+            { "resource": {"db": f"{dbname}", "collection": "billing"}, "actions": ["find"] },
+        ],
+        "roles": []
+    },
+    {
+        "createRole": "administrativeManager",
+        "privileges": [
+            { "resource": {"db": f"{dbname}", "collection": "patient"}, "actions": ["find", "insert", "update", "remove"] },
+            { "resource": {"db": f"{dbname}", "collection": "admission"}, "actions": ["find", "insert", "update", "remove"] },
+            { "resource": {"db": f"{dbname}", "collection": "billing"}, "actions": ["find", "insert", "update", "remove"] },
+        ],
+        "roles": []
+    },
+    {
+        "createRole": "accountingManager",
+        "privileges": [
+            { "resource": {"db": f"{dbname}", "collection": "patient"}, "actions": ["find"] },
+            { "resource": {"db": f"{dbname}", "collection": "admission"}, "actions": ["find"] },
+            { "resource": {"db": f"{dbname}", "collection": "billing"}, "actions": ["find", "insert", "update", "remove"] },            
+        ],
+        "roles": []
+    }
+]
 
 def process_mask(df, mask, column, replace=False):
     # Handles incorrect values by excluding or replacing depending on parameter
@@ -231,6 +281,8 @@ def upsert_row(rowdict, dbcnx):
 
 def initialize_db(db):
     # Collection initialization and index creation
+
+    # exit function if not first run
     if db_collection_name in db.list_collection_names():
         logging.info(f"Collection {db_collection_name} already exists, no modification applied.")
         return
@@ -244,12 +296,21 @@ def initialize_db(db):
         logging.error(f"Error creating collection: {e}")
         return
     coll = db[db_collection_name]
-    for sdocindex in ["patient.Name", "admission.Doctor", "billing.Insurance Provider"]:
+
+    for sdocindex in ["patient.Name", "patient.Gender", "admission.Date of Admission", "admission.Hospital", "admission.Doctor", "observation.Medical Condition"]:
         try:
             coll.create_index(sdocindex)
             logging.info(f"Index {sdocindex} created.")
         except pymongo.errors.OperationFailure:
             logging.error(f"Failed to create index {sdocindex}.")
+
+    for role in roles:
+        try:
+            db.command(role)
+            print(f"Role {role['createRole']} created.")
+        except Exception as e:
+            print(f"Error during role {role['createRole']} creation :", e)
+
 
 def get_db():
     # MongoDB connection via pymongo
