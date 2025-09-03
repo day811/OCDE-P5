@@ -10,9 +10,7 @@ services:
       - mongo_data:/data/db
 
   importer:
-    build: 
-      context: .
-      dockerfile: migration/Dockerfile    
+    build: ./migration
     env_file:
       - .env
     volumes:
