@@ -13,15 +13,3 @@ MONGO_INITDB_ROOT_PASSWORD=
 
 # Name of the created database in Mongo, defaut = test
 #MONGO_DB_NAME=
-
-# logger uses debug level mode when True , defaut = False
-#MIGRATION_DEBUG=
-
-# Number of the first row handle by the migration
-#DEBUG_START=0
-
-# Quantity of row to handle, 0= no limit, default = 0
-#DEBUG_LIMIT=0
-
-# When true, no action are made to the mongo database, default = True
-#DEBUG_TRACE_ONLY=False

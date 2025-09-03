@@ -255,15 +255,12 @@ def migrate_df(df):
         count_inserted += 1
     logging.info(f"Migration complete: {count_inserted} documents inserted out of {total} rows processed.")
 
-def generate_id(rowdict):
-    # Concatenate fields, encode as UTF-8, then hash
-    unique_string = "_".join(str(rowdict[x]) for x in unic_subset)
-    return hashlib.sha256(unique_string.encode("utf-8")).hexdigest()
 
 def upsert_row(rowdict, dbcnx):
     # Transforms a CSV row into a MongoDB document and inserts or updates
     doc = {}
-    doc_id = generate_id(rowdict)
+    unique_string = "_".join(str(rowdict[x]) for x in unic_subset)
+    doc_id = hashlib.sha256(unique_string.encode("utf-8")).hexdigest()
     for subdoc, fields in documentmap.items():
         fieldsdoc = {}
         for field in fields:
@@ -275,10 +272,12 @@ def upsert_row(rowdict, dbcnx):
         try:
             result = dbcnx.care.replace_one({"_id": doc_id}, doc, upsert=True)
             operation = "inserted" if result.upserted_id else "updated"
-            logging.info(f"Document {doc_id} {operation}: patient {doc['patient']['Name']} admission {doc['admission']['Date of Admission']}")
+            logging.info(f"Document {doc_id} {operation}: {unique_string}}")
         except Exception as e:
-            logging.error(f"Error inserting row {e}")
- 
+            logging.error(f"Error inserting row {e}  /n{unique_string}")
+    else:
+        logging.info("Document non upserted - Trace Only mode")
+        
     return
 
 def initialize_db(db):
@@ -303,14 +302,14 @@ def initialize_db(db):
         try:
             coll.create_index(sdocindex)
             logging.info(f"Index {sdocindex} created.")
-        except pymongo.errors.OperationFailure:
-            logging.error(f"Failed to create index {sdocindex}.")
+        except pymongo.errors.OperationFailure as e:
+            logging.error(f"Failed to create index {sdocindex}.", e)
 
     for role in roles:
         try:
             db.command(role)
             logging.info(f"Role {role['createRole']} created.")
-        except Exception as e:
+        except pymongo.errors.OperationFailure as e:
             logging.error(f"Error during role {role['createRole']} creation :", e)
 
 
@@ -321,6 +320,9 @@ def get_db():
     dbcnx = client[dbname]
     if not debug_traceonly :
         initialize_db(dbcnx)
+    else:
+        logging.info("Db initialization non performed - Trace Only mode")
+    
         #pass
     return dbcnx
 
