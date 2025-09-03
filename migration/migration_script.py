@@ -31,7 +31,7 @@ if not dockmode:
     host = "localhost"
     debug_start = 0
     debug_limit = 10
-    debug_traceonly = True
+    debug_traceonly = False
 
 
 unic_subset = ["Name", "Gender", "Date of Admission", "Hospital", "Doctor", "Medical Condition"]
@@ -251,11 +251,8 @@ def migrate_df(df):
     total = len(df)
     logging.info(f"Total rows after cleaning and merging: {total}")
     for i, row in df.iterrows():
-        try:
-            upsert_row(row.to_dict(), cnx)
-            count_inserted += 1
-        except Exception as e:
-            logging.error(f"Error inserting row {i}: {e}")
+        upsert_row(row.to_dict(), cnx)
+        count_inserted += 1
     logging.info(f"Migration complete: {count_inserted} documents inserted out of {total} rows processed.")
 
 def generate_id(rowdict):
@@ -270,13 +267,18 @@ def upsert_row(rowdict, dbcnx):
     for subdoc, fields in documentmap.items():
         fieldsdoc = {}
         for field in fields:
-            fieldsdoc[field] = rowdict[field]
+            camel_field = field[0].lower() + field.title().replace(" ", "")[1:]
+            fieldsdoc[camel_field] = rowdict[field]
         doc[subdoc] = fieldsdoc
     logging.debug(f"Document constructed: {doc}")
     if not debug_traceonly:
-        result = dbcnx.care.replace_one({"_id": doc_id}, doc, upsert=True)
-        operation = "inserted" if result.upserted_id else "updated"
-        logging.info(f"Document {doc_id} {operation}: patient {doc['patient']['Name']} admission {doc['admission']['Date of Admission']}")
+        try:
+            result = dbcnx.care.replace_one({"_id": doc_id}, doc, upsert=True)
+            operation = "inserted" if result.upserted_id else "updated"
+            logging.info(f"Document {doc_id} {operation}: patient {doc['patient']['Name']} admission {doc['admission']['Date of Admission']}")
+        except Exception as e:
+            logging.error(f"Error inserting row {e}")
+ 
     return
 
 def initialize_db(db):
@@ -297,7 +299,7 @@ def initialize_db(db):
         return
     coll = db[db_collection_name]
 
-    for sdocindex in ["patient.Name", "patient.Gender", "admission.Date of Admission", "admission.Hospital", "admission.Doctor", "observation.Medical Condition"]:
+    for sdocindex in ["patient.name", "patient.gender", "admission.dateOfAdmission", "admission.hospital", "admission.doctor", "observation.medicalCondition"]:
         try:
             coll.create_index(sdocindex)
             logging.info(f"Index {sdocindex} created.")
@@ -307,9 +309,9 @@ def initialize_db(db):
     for role in roles:
         try:
             db.command(role)
-            print(f"Role {role['createRole']} created.")
+            logging.info(f"Role {role['createRole']} created.")
         except Exception as e:
-            print(f"Error during role {role['createRole']} creation :", e)
+            logging.error(f"Error during role {role['createRole']} creation :", e)
 
 
 def get_db():
@@ -319,6 +321,7 @@ def get_db():
     dbcnx = client[dbname]
     if not debug_traceonly :
         initialize_db(dbcnx)
+        #pass
     return dbcnx
 
 if __name__ == "__main__":
