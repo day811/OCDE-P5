@@ -272,7 +272,7 @@ def upsert_row(rowdict, dbcnx):
         try:
             result = dbcnx.care.replace_one({"_id": doc_id}, doc, upsert=True)
             operation = "inserted" if result.upserted_id else "updated"
-            logging.info(f"Document {doc_id} {operation}: {unique_string}}")
+            logging.info(f"Document {doc_id} {operation}: {unique_string}")
         except Exception as e:
             logging.error(f"Error inserting row {e}  /n{unique_string}")
     else:
