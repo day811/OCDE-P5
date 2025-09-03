@@ -15,88 +15,89 @@
       "admission": {
         "bsonType": "object",
         "properties": {
-          "Admission Type": {
+          "admissionType": {
             "bsonType": "string"
           },
-          "Date of Admission": {
+          "dateOfAdmission": {
             "bsonType": "date"
           },
-          "Discharge Date": {
+          "dischargeDate": {
             "bsonType": "date"
           },
-          "Doctor": {
+          "doctor": {
             "bsonType": "string"
           },
-          "Hospital": {
+          "hospital": {
             "bsonType": "string"
           },
-          "Room Number": {
+          "roomNumber": {
             "bsonType": "int"
           }
         },
         "required": [
-          "Admission Type",
-          "Date of Admission",
-          "Discharge Date",
-          "Doctor",
-          "Hospital",
-          "Room Number"
+          "admissionType",
+          "dateOfAdmission",
+          "dischargeDate",
+          "doctor",
+          "hospital",
+          "roomNumber"
         ]
       },
       "billing": {
         "bsonType": "object",
         "properties": {
-          "Billing Amount": {
+          "billingAmount": {
             "bsonType": "double"
           },
-          "Insurance Provider": {
+          "insuranceProvider": {
             "bsonType": "string"
           }
         },
         "required": [
-          "Billing Amount",
-          "Insurance Provider"
+          "billingAmount",
+          "insuranceProvider"
         ]
       },
       "observation": {
         "bsonType": "object",
         "properties": {
-          "Medical Condition": {
+          "medicalCondition": {
             "bsonType": "string"
           },
-          "Medication": {
+          "medication": {
             "bsonType": "string"
           },
-          "Test Results": {
+          "testResults": {
             "bsonType": "string"
           }
         },
         "required": [
-          "Medical Condition",
-          "Medication",
-          "Test Results"
+          "medicalCondition",
+          "medication",
+          "testResults"
         ]
       },
       "patient": {
         "bsonType": "object",
         "properties": {
-          "Age": {
+          "age": {
             "bsonType": "int"
           },
-          "Blood Type": {
+          "bloodType": {
             "bsonType": "string"
           },
-          "Gender": {
+          "gender": {
             "bsonType": "string"
           },
-          "Name": {
+          "name": {
             "bsonType": "string"
           }
         },
         "required": [
-          "Age",
-          "Gender",
-          "Name"
+          "age",
+          "bloodType",
+          "gender",
+          "name"
         ]
       }
     }
