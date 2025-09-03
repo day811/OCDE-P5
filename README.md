@@ -43,18 +43,17 @@ The `importer` service depends on the `mongo` container, ensuring MongoDB is rea
 
 ### Prepare environment variables
 
-Change the `.env` file in the project to customize and setup security access:
+Rename `.template_env` file to `.env`  and setup al least security access WITH YOUR OWN SECRET CREDENTIALS:
 
 
 ```bash
 
-MONGO_INITDB_ROOT_USERNAME=root
-
-MONGO_PORT=27017
+MONGO_INITDB_ROOT_USERNAME=my_secret_user
+MONGO_INITDB_ROOT_USERNAME=my_secret_password
 
 ```
 
-Adjust port mapping as needed.
+Adjust other variables as needed.
 
 ### Build and launch containers
 
