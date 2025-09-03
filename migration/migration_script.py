@@ -1,5 +1,4 @@
 import pandas as pd
-from decimal import Decimal
 from datetime import datetime
 import pymongo
 import os

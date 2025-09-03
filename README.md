@@ -7,7 +7,7 @@ This project is dedicated to migrating a medical dataset from CSV files to a **M
 ## 2. Objectives
 
 - Automate migration of CSV data into MongoDB using `migration_script.py`
-- Create MongoDB validation schema and indexes at first run
+- Create MongoDB validation schema, indexes and roles at first run
 - Containerize MongoDB and the migration importer with Docker
 - Use Docker Compose to manage multi-container setup and volumes
 - Provide clear documentation for usage, configuration, and deployment
@@ -43,7 +43,7 @@ The `importer` service depends on the `mongo` container, ensuring MongoDB is rea
 
 ### Prepare environment variables
 
-Rename `.template_env` file to `.env`  and setup al least security access WITH YOUR OWN SECRET CREDENTIALS:
+Copy `.template_env` file to `.env`  and setup al least security access variables WITH YOUR OWN SECRET CREDENTIALS:
 
 
 ```bash
