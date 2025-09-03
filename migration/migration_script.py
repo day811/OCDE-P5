@@ -162,7 +162,7 @@ def clean_df(df):
     col = "Blood Type"
     possible_types = ["A+", "A-", "AB+", "AB-", "B+", "B-", "O+", "O-"]
     mask = ~df[col].isin(possible_types)
-    process_mask(df, mask, col, replace="NA")
+    process_mask(df, mask, col, replace=None)
     logging.info("Processed Blood Type...")
 
     col = "Date of Admission"
@@ -173,12 +173,12 @@ def clean_df(df):
 
     col = "Doctor"
     mask = df[col].isna()
-    process_mask(df, mask, col, replace="NA")
+    process_mask(df, mask, col, replace=None)
     logging.info("Processed Doctor...")
 
     col = "Hospital"
     mask = df[col].isna()
-    process_mask(df, mask, col, replace="NA")
+    process_mask(df, mask, col, replace=None)
     logging.info("Processed Hospital...")
 
     col = "Room Number"
@@ -200,7 +200,7 @@ def clean_df(df):
 
     col = "Insurance Provider"
     mask = df[col].isna()
-    process_mask(df, mask, col, replace="NA")
+    process_mask(df, mask, col, replace=None)
     logging.info("Processed Insurance Provider...")
 
     col = "Billing Amount"
@@ -216,7 +216,7 @@ def clean_df(df):
 
     col = "Medication"
     mask = df[col].isna()
-    process_mask(df, mask, col, replace="NA")
+    process_mask(df, mask, col, replace=None)
     logging.info("Processed Medication...")
 
     col = "Test Results"
