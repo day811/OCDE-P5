@@ -10,7 +10,7 @@ services:
       - mongo_data:/data/db
 
   importer:
-    build: ./migration
+    build: ./importer
     env_file:
       - .env
     volumes:
