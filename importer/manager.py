@@ -2,80 +2,25 @@ from datetime import datetime
 import pandas as pd
 import hashlib
 import logging
+import yaml
 
-PK_ID = "_id"           # string                document primary key  : must start by "_id"
-DOC = "doc"             # string                (sub)/document name  ROOT for master document
-TYPE = "type"           # (str,int,float,date)  default : "str"    atribute type
-INDEX = "index"         # (True/False)          default : False   if True, attribute is also an index
-PRIMARY = "primary"     # (True/False)          default : False   if True, attribute is part if Primary Key
-REPLACE = "replace"     # (True/False)          default : False   if False exclude document from migration
-ERROR_MASK = "mask"     # mask error method     default : "is_na"
-REQUIRED = "required"   # (True/False)          default : True    if required in DBMongo schema validation
+PK_ID = "_id"          
+DOC = "doc"          
+TYPE = "type"         
+INDEX = "index"       
+PRIMARY = "primary"     
+REPLACE = "replace"    
+ERROR_MASK = "mask"   
+REQUIRED = "required" 
 
 DOCNAME = "care"
-ROOT = "/"
+ROOT = "root"
 
-fields_def = {
-        PK_ID : {   DOC : ROOT},
-        "Name" : {  DOC : "patient",
-                    INDEX : True,
-                    PRIMARY : True
-                    },
-        "Age" : {   DOC : "patient", 
-                    TYPE : "int", 
-                    REPLACE : None,
-                    ERROR_MASK : "is_age",
-                    },
-        "Gender" : {DOC : "patient", 
-                    INDEX : True,
-                    PRIMARY : True, 
-                    ERROR_MASK : "is_gender",
-                    },
-        "Blood Type" :{ DOC : "patient", 
-                        REPLACE : None, 
-                        ERROR_MASK : "is_blood_type"
-                        },
-        "Date of Admission" : {DOC : "admission", 
-                               TYPE : "date", 
-                               PRIMARY : True, 
-                               },
-        "Doctor" : {DOC : "admission", 
-                    INDEX : True, 
-                    PRIMARY : True, 
-                    },
-        "Hospital" : {  DOC : "admission", 
-                        INDEX : True, 
-                        PRIMARY : True, 
-                        },
-        "Room Number" : {DOC : "admission", 
-                         TYPE : "int",
-                         REPLACE : None
-                         },
-        "Admission Type" : {DOC : "admission", 
-                            INDEX : True
-                            },
-        "Discharge Date" : {DOC : "admission", 
-                            TYPE : "date", 
-                            REPLACE : None
-                            },
-        "Insurance Provider" : {DOC : "billing", 
-                                REPLACE : None,
-                                },
-        "Billing Amount" : {DOC : "billing", 
-                            TYPE : "float",
-                            REPLACE : None, 
-                            },
-        "Medical Condition" : {DOC : "observation", 
-                               INDEX : True, 
-                               PRIMARY : True
-                               }, 
-        "Medication" : {DOC : "observation", 
-                        }, 
-        "Test Results" : {DOC : "observation", 
-                          }, 
-        }
+def load_yaml(filepath:str):
+    with open(filepath, 'r', encoding='utf8') as f:
+        return yaml.safe_load(f)
 
-
+fields_def = load_yaml("data/fields_settings.yml")
 
 class Field():
     """
@@ -202,7 +147,7 @@ class FieldManager():
     
     def get_doc(self,row:dict):
         """
-        Get the MongoDBdocument representation for a DataFrame row.
+        Get the MongoDB document representation for a DataFrame row.
         """
         doc={}
         for sdocname in self.sdocs:

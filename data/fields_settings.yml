@@ -1,0 +1,83 @@
+# doc         : string                (sub)/document name  ROOT for master document
+# type        (str,int,float,date)    default : "str"      atribute type
+# index       (true/false)            default : false      if true, attribute is also an index
+# primary       (true/false)          default : false      if true, attribute is part if Primary Key
+# replace       (true/false)          default : false      if false exclude document from migration else replace value string or null
+# mask          mask error method     default : "is_na"    must exists in manager.py FieldManager class
+# required      (true/false)          default : true       if required in DBMongo schema validation
+
+"_id":
+        doc : root
+"Name" :   
+        doc : patient
+        index : true
+        primary : true
+       
+"Age" : 
+        doc : patient
+        type : int
+        replace : null
+        error_mask : is_age
+                
+"Gender" : 
+        doc : patient 
+        index : true
+        primary : true 
+        error_mask : is_gender
+        
+"Blood Type" : 
+        doc : patient 
+        replace : null 
+        error_mask : is_blood_type
+                
+"Date of Admission" : 
+        doc : admission 
+        type : date 
+        primary : true
+                        
+"Doctor" : 
+        doc : admission 
+        index : true 
+        primary : true
+        
+"Hospital" :   
+        doc : admission 
+        index : true 
+        primary : true
+                
+"Room Number" : 
+        doc : admission 
+        type : int
+        replace : null
+                        
+"Admission Type" : 
+        doc : admission 
+        index : true
+                        
+"Discharge Date" : 
+        doc : admission 
+        type : date 
+        replace : null
+                        
+"Insurance Provider" : 
+        doc : billing 
+        replace : null
+                        
+"Billing Amount" : 
+        doc : billing 
+        type : float
+        replace : null 
+                        
+"Medical Condition" : 
+        doc : observation 
+        index : true 
+        primary : true
+                         
+"Medication" : 
+        doc : observation
+                 
+"Test Results" : 
+        doc : observation
+                           
+        
+
