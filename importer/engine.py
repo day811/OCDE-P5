@@ -13,25 +13,34 @@ PORT = "port"
 DEBUG_MODE = "debug_mode"
 START = "start" 
 LIMIT = "limit"
-TRACEONLY = "traceonly"
-CLEANDB = "cleandb"
+TRACE_ONLY = "traceonly"
+CLEAN_DB = "cleandb"
+
+CFG= {}
 
 
 
 class Engine():
+    """
+    Importer Engine for processing and migrating healthcare data.
+    """
 
-    
-    def __init__(self, settings:dict):
+    def __init__(self):
+        """
+        Initialize the Engine with logging and configuration.
+        """ 
         self.log = logging.getLogger(self.__class__.__name__)
         self.log.info("="*50)
         self.log.info("Importer Engine starts ")
         self.df = None
         self.db = None
-        self.settings = settings
         self.fm = FieldManager()
 
 
     def load_df(self, df):
+        """
+        Load a DataFrame or CSV file into the engine.
+        """
         try :
             if isinstance(df,pd.DataFrame):
                 self.log.info(f"DataFrame loaded")
@@ -41,13 +50,15 @@ class Engine():
                self.log.error("DF loader : Error with your entry, must be a dataframe or a csv file" )
         except Exception as e:
             self.log.error("DF loader : Error with your entry, must be a dataframe or a csv file" )
-        if self.settings[START] or self.settings[LIMIT]:
-            df = df.iloc[self.settings[START]:self.settings[START]+self.settings[LIMIT]]
+        if CFG[START] or CFG[LIMIT]:
+            df = df.iloc[CFG[START]:CFG[START]+CFG[LIMIT]]
         self.df = df
         return self.df
 
     def clean_df(self):
-        
+        """
+        Clean the DataFrame by converting and validating fields.
+        """
         for fieldname in self.fm.fields :
             if fieldname != PK_ID:
                 self.fm.convert_df_values(self.df,fieldname)      
@@ -55,7 +66,9 @@ class Engine():
         return self.df
 
     def make_unic_df(self):
-        # Handles duplicates by keeping only the latest
+        """
+        Make the DataFrame unique by removing duplicates.
+        """
         subset=self.fm.get_pk_fields()
         mask = self.df.duplicated(subset=subset, keep="last")
         duplicated = self.df[mask].sort_values("Name")
@@ -69,10 +82,12 @@ class Engine():
         return self.df
 
     def upsert_row(self, row : dict):
-        # Transforms a CSV row into a MongoDB document and inserts or updates
+        """
+        Upsert a dataframe row into the MongoDB collection.
+        """
         doc , pk = self.fm.get_doc(row)
         self.log.debug(f"Document constructed: {doc}")
-        if not self.settings[TRACEONLY]:
+        if not CFG[TRACE_ONLY]:
             try:
                 result = self.db.care.replace_one({PK_ID: doc[PK_ID]}, doc, upsert=True)
                 operation = "inserted" if result.upserted_id else "updated"
@@ -84,8 +99,12 @@ class Engine():
             
 
     def initialize_db(self):
+        """
+        Initialize the database collections, schema, and indexes.
+        """
+
         # Collection initialization and index creation
-        dbname = self.settings[DBNAME]
+        dbname = CFG[DBNAME]
         roles = [
             {   "createRole": "healthcareOperator",
                 "privileges": [
@@ -129,7 +148,7 @@ class Engine():
         ]
 
         # Clean DB, security, schema and index
-        if self.settings[CLEANDB]:
+        if CFG[CLEAN_DB]:
             self.log.warning(f"Collection {dbname}, schema and index deletion.")
             self.db.drop_collection(DOCNAME)
             self.db.command("dropAllRolesFromDatabase")
@@ -170,23 +189,36 @@ class Engine():
 
 
     def get_db(self):
+        """
+        Get the MongoDB database connection.
+        """
         # MongoDB connection via pymongo
-        cnxstr = f"mongodb://{self.settings[USERNAME]}:{self.settings[PASSWORD]}@{self.settings[HOST]}:{self.settings[PORT]}/"
+        cnxstr = f"mongodb://{CFG[USERNAME]}:{CFG[PASSWORD]}@{CFG[HOST]}:{CFG[PORT]}/"
         client = pymongo.MongoClient(cnxstr)
-        self.db = client[self.settings[DBNAME]]
-        if not self.settings[TRACEONLY] :
+        self.db = client[CFG[DBNAME]]
+        if not CFG[TRACE_ONLY] :
             self.initialize_db()
         else:
             self.log.info("Db initialization non performed - Trace Only mode")
 
     def import_df(self):
+        """
+        Extract, transform and load a DataFrame into MongoDB.
+        """
         # Main function for migrating DataFrame to MongoDB
-        self.log.info(f"Execution options - start: {self.settings[START]}, limit: {self.settings[LIMIT]}, traceonly: {self.settings[TRACEONLY]}")
-        self.log.info("Cleaning data before migration...")
+        self.log.info(f"Execution options - start: {CFG[START]}, limit: {CFG[LIMIT]}, traceonly: {CFG[TRACE_ONLY]}")
+
+        self.log.info("Try to connect to MongoDB.")
         self.get_db()
+        self.log.info("Connection OK.")
+
+        self.log.info("Cleaning data before migration...")
         self.clean_df()
-        self.log.info("Processing duplicates...")
+        self.log.info("Cleaning done")
+
+        self.log.info("Removing  duplicates...")
         self.df = self.make_unic_df()
+
         count_inserted = 0
         total = len(self.df)
         self.log.info(f"Total rows after cleaning and merging: {total}")

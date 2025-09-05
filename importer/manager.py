@@ -3,13 +3,13 @@ import pandas as pd
 import hashlib
 import logging
 
-PK_ID = "_id"           # string    document primary key  : must start by "_id"
-DOC = "doc"           # string    attribute (sub)/document name  ROOT for master document
+PK_ID = "_id"           # string                document primary key  : must start by "_id"
+DOC = "doc"             # string                (sub)/document name  ROOT for master document
 TYPE = "type"           # (str,int,float,date)  default : "str"    atribute type
 INDEX = "index"         # (True/False)          default : False   if True, attribute is also an index
 PRIMARY = "primary"     # (True/False)          default : False   if True, attribute is part if Primary Key
 REPLACE = "replace"     # (True/False)          default : False   if False exclude document from migration
-ERROR_MASK = "mask"     # mask error method name  default : "is_na"
+ERROR_MASK = "mask"     # mask error method     default : "is_na"
 REQUIRED = "required"   # (True/False)          default : True    if required in DBMongo schema validation
 
 DOCNAME = "care"
@@ -78,6 +78,9 @@ fields_def = {
 
 
 class Field():
+    """
+    Represents a field definition in the dataframe and the MongoDB document.
+    """
 
     dft_values = {DOC : None,
                   TYPE : "str",
@@ -103,13 +106,20 @@ class Field():
             return Field.dft_values[param_name]            
 
 class FieldManager():
+    """
+    Manages field definitions and their transformations.
+    """
 
     def __init__(self):
+        """
+        Initialize FieldManager with logging and field definitions.
+        """
         self.log = logging.getLogger(self.__class__.__name__)
         self.fields = {}
         self.sdocs = []
         self.convert_dft = None
         self.convert_fmt_date =  "%Y-%m-%d"
+        self.float_round = 2
 
         for fieldname, params in fields_def.items():
             self.fields[fieldname] = Field(fieldname,params)
@@ -120,6 +130,9 @@ class FieldManager():
      
 
     def convert_df_values(self, df:pd.DataFrame,fieldname:str):
+        """
+        Convert DataFrame column values based on field type.
+        """
         ftype = self.fields[fieldname].get_param(TYPE)
         match ftype :
             case "int":
@@ -131,25 +144,42 @@ class FieldManager():
         return df
     
     def get_df_error_mask(self,df : pd.DataFrame, fieldname : str):
+        """
+        Get the error mask for a DataFrame column based on field validation.
+        """
         mask_func = self.fields[fieldname].get_param(ERROR_MASK)
         mask = getattr(self,mask_func)(df,fieldname)
         return mask
 
     def is_na(self,df:pd.DataFrame, fieldname:str):
+        """
+        Mask missing values in a DataFrame column.
+        """
         return df[fieldname].isna()
 
     def is_age(self, df:pd.DataFrame, fieldname:str):
+        """
+        Mask invalid age values in a DataFrame column.
+        """
         return (df[fieldname] < 0) | (df[fieldname] > 120) | df[fieldname].isna()
     
     def is_gender(self,df:pd.DataFrame, fieldname:str):
+        """
+        Mask invalid gender values in a DataFrame column.
+        """
         return ~df[fieldname].isin(["Male", "Female"])
     
     def is_blood_type(self,df:pd.DataFrame, fieldname:str):
+        """
+        Mask invalid blood type values in a DataFrame column.
+        """
         possible_types = ["A+", "A-", "AB+", "AB-", "B+", "B-", "O+", "O-"]
         return  ~df[fieldname].isin(possible_types)
  
     def apply_mask(self,df:pd.DataFrame, fieldname:str):
-        # Handles incorrect values by excluding or replacing depending on parameter
+        """
+        Apply error mask to DataFrame column based on field validation.
+        """
         error_mask = self.get_df_error_mask(df,fieldname)
         replace = self.fields[fieldname].get_param(REPLACE) 
         rows_to_log = df[error_mask]
@@ -171,6 +201,9 @@ class FieldManager():
     
     
     def get_doc(self,row:dict):
+        """
+        Get the MongoDBdocument representation for a DataFrame row.
+        """
         doc={}
         for sdocname in self.sdocs:
             sdoc={}
@@ -191,16 +224,28 @@ class FieldManager():
         return doc , pk_values
 
     def get_pk_values(self,row:dict):
+        """
+        Return a list the primary key values for a MongoDB document.
+        """
         pk_values = [str(row[field.name] ) for field in self.fields.values() if field.get_param(PRIMARY)]
         return pk_values
 
     def get_pk_fields(self):
+        """
+        Get the primary key fields for a MongoDB document.
+        """ 
         return [field.name for field in self.fields.values() if field.get_param(PRIMARY)]
     
     def get_indexes(self):
+        """
+        Get the index fields for a MongoDB document.
+        """
         return [f"{field.get_param(DOC)}.{field.camel_name}" for field in self.fields.values() if field.get_param(INDEX)]
     
     def convert_to_int(self, val):
+        """
+        Convert a value to int.
+        """
         try:
             return int(val)
         except (ValueError, TypeError) as e:
@@ -208,13 +253,19 @@ class FieldManager():
             return self.convert_dft
 
     def convert_to_float(self, val):
+        """
+        Convert a value to float.
+        """
         try:
             return float(val)  # Compatible with MongoDB
         except (ValueError, TypeError) as e:
             self.log.error(f"Error converting to float for value {val}: {e}")
-            return self.convert_dft
+            return self.convert_dft.round(self.float_round)
 
     def convert_to_date(self, val):
+        """
+        Convert a value to date.
+        """
         try:
             if pd.isna(val):
                 return self.convert_dft
