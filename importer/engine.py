@@ -18,7 +18,7 @@ TRACE_ONLY = "trace_only"
 CLEAN_DB = "clean_db"
 
 CFG= {}
-STARS = "="*50
+STARS = "*" * 50
 BLANK = ""
 
 def handle_critical(message):
@@ -38,7 +38,7 @@ class Engine():
         global CFG
         CFG = config
         self.log = logging.getLogger(self.__class__.__name__)
-        self.log.info("="*50)
+        self.log.info(STARS)
         self.log.info("Importer Engine starts ")
         self.df = None
         self.db = None
@@ -111,57 +111,13 @@ class Engine():
         """
         Initialize the database collections, schema, and indexes.
         """
-
-        # Collection initialization and index creation
-        dbname = CFG[DBNAME]
-        roles = [
-            {   "createRole": "healthcareOperator",
-                "privileges": [
-                    { "resource": {"db": f"{dbname}", "collection": "patient"}, "actions": ["find"] },
-                    { "resource": {"db": f"{dbname}", "collection": "admission"}, "actions": ["find"] },
-                    { "resource": {"db": f"{dbname}", "collection": "observation"}, "actions": ["find"] },
-               ],
-                "roles": []},
-            {   "createRole": "healthcareManager",
-                "privileges": [
-                    { "resource": {"db": f"{dbname}", "collection": "observation"}, "actions": ["find", "insert", "update", "remove"] },
-                    { "resource": {"db": f"{dbname}", "collection": "patient"}, "actions": ["find"] },            
-                    { "resource": {"db": f"{dbname}", "collection": "admission"}, "actions": ["find"] },            
-                ],
-                "roles": []
-            },
-            {   "createRole": "administrativeOperator",
-                "privileges": [
-                    { "resource": {"db": f"{dbname}", "collection": "patient"}, "actions": ["find"] },
-                    { "resource": {"db": f"{dbname}", "collection": "admission"}, "actions": ["find"] },
-                    { "resource": {"db": f"{dbname}", "collection": "billing"}, "actions": ["find"] },
-                ],
-                "roles": []
-            },
-            {   "createRole": "administrativeManager",
-                "privileges": [
-                    { "resource": {"db": f"{dbname}", "collection": "patient"}, "actions": ["find", "insert", "update", "remove"] },
-                    { "resource": {"db": f"{dbname}", "collection": "admission"}, "actions": ["find", "insert", "update", "remove"] },
-                    { "resource": {"db": f"{dbname}", "collection": "billing"}, "actions": ["find", "insert", "update", "remove"] },
-                ],
-                "roles": []
-            },
-            {   "createRole": "accountingManager",
-                "privileges": [
-                    { "resource": {"db": f"{dbname}", "collection": "patient"}, "actions": ["find"] },
-                    { "resource": {"db": f"{dbname}", "collection": "admission"}, "actions": ["find"] },
-                    { "resource": {"db": f"{dbname}", "collection": "billing"}, "actions": ["find", "insert", "update", "remove"] },            
-                ],
-                "roles": []
-            }
-        ]
-
+        dbname = CFG[DBNAME]                
         # Clean DB, security, schema and index
         if CFG[CLEAN_DB]:
             self.log.warning(f"Collection {dbname}, schema and index deletion.")
             self.db.drop_collection(DOCNAME)
-            self.db.command("dropAllRolesFromDatabase")
             self.log.warning(f"All roles of Mongodb deletion.")
+            self.db.command("dropAllRolesFromDatabase")
 
         
         
@@ -169,10 +125,9 @@ class Engine():
         if DOCNAME in self.db.list_collection_names():
             self.log.info(f"Collection {DOCNAME} already exists, no modification applied.")
             return
+
         try:
-            schema_filepath = "data/schema_validation.json"
-            with open(schema_filepath, "r") as f:
-                schema = json.load(f)
+            schema = self.fm.build_mongodb_schema()
             self.db.create_collection(DOCNAME, validator=schema)
             self.log.info(f"Collection {DOCNAME} created with JSON Schema validation.")
         except pymongo.errors.CollectionInvalid as e:
@@ -187,6 +142,10 @@ class Engine():
                 self.log.info(f"Index {index} created.")
             except pymongo.errors.OperationFailure as e:
                 self.log.warning(f"Failed to create index {index}.", e)
+
+        replace_dict= {"${dbname}": dbname}
+        data = load_yaml("data/mongodb_roles.yml", replace=replace_dict)
+        roles = data['roles']
 
         for role in roles:
             try:
@@ -241,6 +200,7 @@ class Engine():
         count_inserted = 0
         total = len(self.df)
         self.log.info(f"Total rows after cleaning and merging: {total}")
+
         for i, row in self.df.iterrows():
             self.upsert_row(row.to_dict())
             count_inserted += 1

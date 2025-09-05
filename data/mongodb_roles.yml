@@ -1,0 +1,110 @@
+roles:
+  - createRole: healthcareOperator
+    privileges:
+      - resource:
+          db: "${dbname}"
+          collection: patient
+        actions:
+          - find
+      - resource:
+          db: "${dbname}"
+          collection: admission
+        actions:
+          - find
+      - resource:
+          db: "${dbname}"
+          collection: observation
+        actions:
+          - find
+    roles: []
+
+  - createRole: healthcareManager
+    privileges:
+      - resource:
+          db: "${dbname}"
+          collection: observation
+        actions:
+          - find
+          - insert
+          - update
+          - remove
+      - resource:
+          db: "${dbname}"
+          collection: patient
+        actions:
+          - find
+      - resource:
+          db: "${dbname}"
+          collection: admission
+        actions:
+          - find
+    roles: []
+
+  - createRole: administrativeOperator
+    privileges:
+      - resource:
+          db: "${dbname}"
+          collection: patient
+        actions:
+          - find
+      - resource:
+          db: "${dbname}"
+          collection: admission
+        actions:
+          - find
+      - resource:
+          db: "${dbname}"
+          collection: billing
+        actions:
+          - find
+    roles: []
+
+  - createRole: administrativeManager
+    privileges:
+      - resource:
+          db: "${dbname}"
+          collection: patient
+        actions:
+          - find
+          - insert
+          - update
+          - remove
+      - resource:
+          db: "${dbname}"
+          collection: admission
+        actions:
+          - find
+          - insert
+          - update
+          - remove
+      - resource:
+          db: "${dbname}"
+          collection: billing
+        actions:
+          - find
+          - insert
+          - update
+          - remove
+    roles: []
+
+  - createRole: accountingManager
+    privileges:
+      - resource:
+          db: "${dbname}"
+          collection: patient
+        actions:
+          - find
+      - resource:
+          db: "${dbname}"
+          collection: admission
+        actions:
+          - find
+      - resource:
+          db: "${dbname}"
+          collection: billing
+        actions:
+          - find
+          - insert
+          - update
+          - remove
+    roles: []

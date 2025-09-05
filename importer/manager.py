@@ -16,11 +16,25 @@ REQUIRED = "required"
 DOCNAME = "care"
 ROOT = "root"
 
-def load_yaml(filepath:str):
+def load_yaml(filepath:str, replace=None):
     with open(filepath, 'r', encoding='utf8') as f:
-        return yaml.safe_load(f)
+        yml_obj = yaml.safe_load(f)
+    if isinstance(replace,dict):
+        for placeholer, value in replace.items():
+            yml_obj = replace_placeholder(yml_obj,placeholer,value)
+    return yml_obj
 
-fields_def = load_yaml("data/fields_settings.yml")
+def replace_placeholder(obj, placeholder, value):
+    if isinstance(obj, dict):
+        return {k: replace_placeholder(v, placeholder, value) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [replace_placeholder(i, placeholder, value) for i in obj]
+    elif isinstance(obj, str) and placeholder in obj:
+        return obj.replace(placeholder, value)
+    else:
+        return obj
+
+
 
 class Field():
     """
@@ -38,12 +52,9 @@ class Field():
 
     def __init__(self, name, params):
         self.name = name
-        self.camel_name = name[0].lower() + name.title().replace(" ", "")[1:]
+        self.camel_name = (name[0].lower() + name.title().replace(" ", "")[1:]) if self.name != PK_ID else PK_ID
         self.params = params
 
-    def get_camel_name(self):
-        return self.camel_name if self.name != PK_ID else PK_ID
-    
     def get_param(self, param_name):
         if param_name in self.params:
             return self.params[param_name]
@@ -65,14 +76,14 @@ class FieldManager():
         self.convert_dft = None
         self.convert_fmt_date =  "%Y-%m-%d"
         self.float_round = 2
-
+        
+        fields_def = load_yaml("data/fields_settings.yml")
         for fieldname, params in fields_def.items():
             self.fields[fieldname] = Field(fieldname,params)
             sdoc = self.fields[fieldname].get_param(DOC)
             if sdoc not in self.sdocs : 
                 self.sdocs.append(sdoc)
         self.log.info(f"Field Manager starts : loading fields params")
-     
 
     def convert_df_values(self, df:pd.DataFrame,fieldname:str):
         """
@@ -160,13 +171,14 @@ class FieldManager():
                         value = hashlib.sha256(pk_values.encode("utf-8")).hexdigest()   
                     else:
                         value = row[field.name]
-                    sdoc[field.get_camel_name()] = value
+                    sdoc[field.camel_name] = value
             if sdocname == ROOT:
                 doc = sdoc
             else:
                 doc[sdocname] = sdoc
 
         return doc , pk_values
+    
 
     def get_pk_values(self,row:dict):
         """
@@ -218,3 +230,69 @@ class FieldManager():
         except (ValueError, TypeError) as e:
             self.log.error(f"Error converting to date for value {val}: {e}")
             return self.convert_dft
+
+    def build_mongodb_schema(self):
+        """
+        Transform fields dict in mongodb schema
+        """
+        schema_dict = self.get_mongodb_dict()
+        docs = {}
+        root_required = set()
+        root_properties = {}
+
+        for field, info in schema_dict.items():
+            doc = info['doc']
+            ftype = self.map_type(info['type'])
+            required = info.get('required', False)
+
+            # Cas racine (ex : _id)
+            if doc == 'root':
+                root_properties[field] = {"bsonType": ftype}
+                if required:
+                    root_required.add(field)
+                continue
+
+            if doc not in docs:
+                docs[doc] = {
+                    "bsonType": "object",
+                    "properties": {},
+                    "required": []
+                }
+            docs[doc]["properties"][field] = {"bsonType": ftype}
+            if required:
+                docs[doc]["required"].append(field)
+                root_required.add(doc)
+
+        # Build final schema
+        schema = {
+            "$jsonSchema": {
+                "bsonType": "object",
+                "required": list(root_required),
+                "properties": {
+                    **root_properties,
+                    **docs
+                }
+            }
+        }
+        return schema
+
+    def map_type(self,t):
+        mapping = {
+            "str": "string",
+            "int": "int",
+            "float": "double",
+            "date": "date",
+            "bool": "bool",
+            "boolean": "bool"
+        }
+        return mapping.get(t.lower(), "string")
+
+    def get_mongodb_dict(self):
+        dict = {}
+        needed= [DOC,TYPE,REQUIRED]
+        for field in self.fields.values():
+            field_params ={}
+            for param in needed:
+                field_params[param] = field.get_param(param)
+            dict[field.camel_name] = field_params
+        return dict
