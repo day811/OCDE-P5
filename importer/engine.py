@@ -2,7 +2,6 @@ from manager import *
 import pandas as pd
 import os
 import pymongo
-import json
 import logging
 import sys
 
