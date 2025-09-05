@@ -39,20 +39,20 @@ logging.basicConfig(
 logging.info("Logger configured")
 
 if not CFG[USERNAME] or not CFG[PASSWORD]:
-    logging.info("Invalid username or password in your .env, must be both filled")
-    logging.info("Consult readme about .env, environment variables and setup process")
+    logging.critical("Invalid username or password in your .env, must be both filled")
+    handle_critical("Consult readme about .env, environment variables and setup process")
 
 
-importer = Engine()
+importer = Engine(CFG)
 
 if __name__ == "__main__":
-    logging.info("="*50)
+    logging.info(STARS)
     logging.info(f"Starting migration to DB {CFG[DBNAME]}")
     
     importer.load_df("data/healthcare_dataset.csv")
     importer.import_df()
     
     logging.info(f"End of migration to DB {CFG[DBNAME]}")
-    logging.info("")
-    logging.info("="*50)
-    logging.info("")
+    logging.info(BLANK)
+    logging.info(STARS)
+    logging.info(BLANK)

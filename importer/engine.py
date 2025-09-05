@@ -4,6 +4,7 @@ import os
 import pymongo
 import json
 import logging
+import sys
 
 DBNAME = "dbname"
 USERNAME = "username" 
@@ -13,22 +14,29 @@ PORT = "port"
 DEBUG_MODE = "debug_mode"
 START = "start" 
 LIMIT = "limit"
-TRACE_ONLY = "traceonly"
-CLEAN_DB = "cleandb"
+TRACE_ONLY = "trace_only"
+CLEAN_DB = "clean_db"
 
 CFG= {}
+STARS = "="*50
+BLANK = ""
 
-
+def handle_critical(message):
+    logging.critical(message)
+    logging.critical(f"Abnormal end of execution")
+    sys.exit(1)
 
 class Engine():
     """
     Importer Engine for processing and migrating healthcare data.
     """
 
-    def __init__(self):
+    def __init__(self,config):
         """
         Initialize the Engine with logging and configuration.
         """ 
+        global CFG
+        CFG = config
         self.log = logging.getLogger(self.__class__.__name__)
         self.log.info("="*50)
         self.log.info("Importer Engine starts ")
@@ -50,6 +58,7 @@ class Engine():
                self.log.error("DF loader : Error with your entry, must be a dataframe or a csv file" )
         except Exception as e:
             self.log.error("DF loader : Error with your entry, must be a dataframe or a csv file" )
+            exit()
         if CFG[START] or CFG[LIMIT]:
             df = df.iloc[CFG[START]:CFG[START]+CFG[LIMIT]]
         self.df = df
@@ -93,7 +102,7 @@ class Engine():
                 operation = "inserted" if result.upserted_id else "updated"
                 self.log.info(f"Document {doc[PK_ID]} {operation}: {pk}")
             except Exception as e:
-                self.log.error(f"Error inserting row {e}  /n{pk}")
+                self.log.warning(f"Error inserting row {e}  /n{pk}")
         else:
             self.log.info("Document non upserted - Trace Only mode")
             
@@ -167,7 +176,7 @@ class Engine():
             self.db.create_collection(DOCNAME, validator=schema)
             self.log.info(f"Collection {DOCNAME} created with JSON Schema validation.")
         except pymongo.errors.CollectionInvalid as e:
-            self.log.error(f"Error creating collection: {e}")
+            self.log.warning(f"Error creating collection: {e}")
             return
         
         collection = self.db[DOCNAME]
@@ -177,14 +186,14 @@ class Engine():
                 collection.create_index(index)
                 self.log.info(f"Index {index} created.")
             except pymongo.errors.OperationFailure as e:
-                self.log.error(f"Failed to create index {index}.", e)
+                self.log.warning(f"Failed to create index {index}.", e)
 
         for role in roles:
             try:
                 self.db.command(role)
                 self.log.info(f"Role {role['createRole']} created.")
             except pymongo.errors.OperationFailure as e:
-                self.log.error(f"Error during role {role['createRole']} creation :", e)
+                self.log.warning(f"Error during role {role['createRole']} creation :", e)
 
 
 
@@ -193,31 +202,41 @@ class Engine():
         Get the MongoDB database connection.
         """
         # MongoDB connection via pymongo
-        cnxstr = f"mongodb://{CFG[USERNAME]}:{CFG[PASSWORD]}@{CFG[HOST]}:{CFG[PORT]}/"
-        client = pymongo.MongoClient(cnxstr)
-        self.db = client[CFG[DBNAME]]
-        if not CFG[TRACE_ONLY] :
-            self.initialize_db()
-        else:
-            self.log.info("Db initialization non performed - Trace Only mode")
+        try:
 
+            cnxstr = f"mongodb://{CFG[USERNAME]}:{CFG[PASSWORD]}@{CFG[HOST]}:{CFG[PORT]}/"
+            client = pymongo.MongoClient(cnxstr)
+            self.db = client[CFG[DBNAME]]
+            self.log.info("Connection established.")
+        except pymongo.errors.OperationFailure as e:
+            handle_critical(f"No connection : review your .env settings", e)
+    
+    
     def import_df(self):
         """
         Extract, transform and load a DataFrame into MongoDB.
         """
         # Main function for migrating DataFrame to MongoDB
-        self.log.info(f"Execution options - start: {CFG[START]}, limit: {CFG[LIMIT]}, traceonly: {CFG[TRACE_ONLY]}")
+        self.log.info(f"Execution options - start: {CFG[START]}, limit: {CFG[LIMIT]}, TRACE_ONLY: {CFG[TRACE_ONLY]}")
 
         self.log.info("Try to connect to MongoDB.")
         self.get_db()
-        self.log.info("Connection OK.")
+        self.log.info(BLANK)
+
+        if not CFG[TRACE_ONLY] :
+            self.log.info("Db initialization started")
+            self.initialize_db()
+            self.log.info(BLANK)
+        else:
+            self.log.info("Db initialization non performed - Trace Only mode")
 
         self.log.info("Cleaning data before migration...")
         self.clean_df()
-        self.log.info("Cleaning done")
+        self.log.info(BLANK)
 
         self.log.info("Removing  duplicates...")
         self.df = self.make_unic_df()
+        self.log.info(BLANK)
 
         count_inserted = 0
         total = len(self.df)
@@ -226,3 +245,6 @@ class Engine():
             self.upsert_row(row.to_dict())
             count_inserted += 1
         self.log.info(f"Migration complete: {count_inserted} documents inserted out of {total} rows processed.")
+        self.log.info(BLANK)
+
+
