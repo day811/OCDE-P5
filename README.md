@@ -171,11 +171,11 @@ cp .template.test.env .test.env
 | Variable | Description | Production Default | Test Default | Required |
 |----------|-------------|-------------------|--------------|----------|
 | `MONGODBNAME` | Database name | healthcare | testhc | ✓ |
-| `MONGOINITDBROOTUSERNAME` | MongoDB root username | - | - | ✓ |
-| `MONGOINITDBROOTPASSWORD` | MongoDB root password | - | - | ✓ |
+| `MONGOINITDBROOTUSERNAME` | MongoDB root username | - | - | ✓ in prod |
+| `MONGOINITDBROOTPASSWORD` | MongoDB root password | - | - | ✓ in prod |
 | `MONGOHOST` | MongoDB host | mongo | mongo | ✗ |
 | `MONGOPORT` | MongoDB port | 27017 | 27017 | ✗ |
-| `MONGOVOLUME` | Docker volume name | mongoproddata | mongotestdata | ✗ |
+| `MONGOVOLUME` | Docker volume name | mongoproddata | mongotestdata | ✓ in prod |
 | `MIGRATIONDEBUG` | Enable debug logging | False | True | ✗ |
 | `DEBUGSTART` | Start row for debug | 0 | 0 | ✗ |
 | `DEBUGLIMIT` | Limit rows for debug | 0 | 100 | ✗ |
@@ -292,33 +292,49 @@ docker-compose restart importer
 
 ### Collection Structure
 
-The system creates a MongoDB collection with the following schema:
+The system creates a MongoDB collection with the schema depending on field_settings.yml:
 
 ```javascript
 {
-  "_id": "generated_hash_key",
-  "name": "string",
-  "demographics": {
-    "age": "number",
-    "gender": "string"
-  },
-  "medical": {
-    "bloodType": "string", 
-    "medicalCondition": "string",
-    "testResults": "string",
-    "medication": "string"
-  },
-  "admission": {
-    "dateOfAdmission": "date",
-    "dischargeDate": "date", 
-    "admissionType": "string",
-    "roomNumber": "number"
-  },
-  "provider": {
-    "doctor": "string",
-    "hospital": "string", 
-    "insuranceProvider": "string",
-    "billingAmount": "number"
+  $jsonSchema: {
+    bsonType: 'object',
+    required: [
+      'observation',
+      '_id',
+      'patient',
+      'billing',
+      'admission'
+    ],
+    properties: {
+      _id: {
+        bsonType: 'string'
+      },
+      patient: {
+        bsonType: 'object',
+        properties: {
+          name: {
+            bsonType: 'string'
+          },
+          age: {
+            bsonType: 'int'
+          },
+          gender: {
+            bsonType: 'string'
+          },
+          bloodType: {
+            bsonType: 'string'
+          }
+        },
+        required: [
+          'name',
+          'age',
+          'gender',
+          'bloodType'
+        ]
+      },}
+`.........
+
+    }
   }
 }
 ```
