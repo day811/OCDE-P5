@@ -2,6 +2,7 @@
 .venv/*
 sources/*
 __pycache__
-*test*
+
 *.log
 /.env
+/.test.env
