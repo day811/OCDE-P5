@@ -9,14 +9,20 @@ def get_bool(value):
     return value.lower() in ["true", "1", "yes"]
 
 dockmode = get_bool(os.getenv("DOCKMODE", "0"))
+dbname = prod_dbname = os.getenv("MONGO_DB_NAME","healthcare")
 
 # possibly overwrite CFG in interactive/test mode 
 if not dockmode and os.path.exists(".test.env"):
     load_dotenv(".test.env", override=True)
+    # ensure dbname in test mode is different from dock mode
+    dbname = os.getenv("MONGO_DB_NAME", "healthcare")
+    if dbname == prod_dbname:
+        dbname = f"test{prod_dbname}"
 
 # Loads environment variables from .env
 CFG = {
-    DBNAME : os.getenv("MONGO_DB_NAME", "test"),
+    DBNAME : dbname,
+
     USERNAME : os.getenv("MONGO_INITDB_ROOT_USERNAME",None),
     PASSWORD : os.getenv("MONGO_INITDB_ROOT_PASSWORD", None),
     HOST : os.getenv("MONGO_HOST", "mongo") if dockmode else "localhost" ,
@@ -26,7 +32,9 @@ CFG = {
     LIMIT : int(os.getenv("DEBUG_LIMIT", 0)) if  not dockmode else 0,
     TRACE_ONLY : get_bool(os.getenv("DEBUG_TRACE_ONLY", "1")) and not dockmode,
     CLEAN_DB : get_bool(os.getenv("CLEAN_DB", "0")) and not dockmode,
-    
+    PROD_DBNAME : prod_dbname,
+    DOCKMODE : dockmode,
+    DOCNAME : "care"
 }
 
 

@@ -13,7 +13,6 @@ REPLACE = "replace"
 ERROR_MASK = "mask"   
 REQUIRED = "required" 
 
-DOCNAME = "care"
 ROOT = "root"
 
 def load_yaml(filepath:str, replace=None):
@@ -152,10 +151,7 @@ class FieldManager():
             self.log.info(f"No anomaly detected in column {fieldname}.")
         return df
 
-    def get_schema(self):
-        pass
-    
-    
+        
     def get_doc(self,row:dict):
         """
         Get the MongoDB document representation for a DataFrame row.
@@ -245,7 +241,7 @@ class FieldManager():
             ftype = self.map_type(info['type'])
             required = info.get('required', False)
 
-            # Cas racine (ex : _id)
+            # Root case  (ex : _id)
             if doc == 'root':
                 root_properties[field] = {"bsonType": ftype}
                 if required:

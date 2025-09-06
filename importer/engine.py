@@ -5,6 +5,7 @@ import pymongo
 import logging
 import sys
 
+PROD_DBNAME = "prod_dbname"
 DBNAME = "dbname"
 USERNAME = "username" 
 PASSWORD  = "password" 
@@ -15,6 +16,9 @@ START = "start"
 LIMIT = "limit"
 TRACE_ONLY = "trace_only"
 CLEAN_DB = "clean_db"
+DOCKMODE = "dockmode"
+DOCNAME  = "docname"
+
 
 CFG= {}
 STARS = "*" * 50
@@ -61,16 +65,20 @@ class Engine():
         if CFG[START] or CFG[LIMIT]:
             df = df.iloc[CFG[START]:CFG[START]+CFG[LIMIT]]
         self.df = df
+        self.log.info(BLANK)
         return self.df
 
     def clean_df(self):
         """
         Clean the DataFrame by converting and validating fields.
         """
+        self.log.info("Clean data before migration...")
+
         for fieldname in self.fm.fields :
             if fieldname != PK_ID:
                 self.fm.convert_df_values(self.df,fieldname)      
                 self.fm.apply_mask(self.df,fieldname)
+        self.log.info(BLANK)
         return self.df
 
     def make_unic_df(self):
@@ -87,7 +95,22 @@ class Engine():
             self.df.drop(duplicated.index, inplace=True)
         else:
             logging.info("No duplicate detected in the dataset.")
+        self.log.info(BLANK)
         return self.df
+
+
+    def upsert_rows(self):
+        count_inserted = 0
+        total = len(self.df)
+        self.log.info(STARS)
+        self.log.info(f"Migration start with {total} documents fter cleaning and merging.")
+        for i, row in self.df.iterrows():
+            self.upsert_row(row.to_dict())
+            count_inserted += 1
+        self.log.info(f"Migration complete: {count_inserted} documents inserted out of {total} rows processed.")
+        self.log.info(BLANK)
+
+
 
     def upsert_row(self, row : dict):
         """
@@ -110,30 +133,36 @@ class Engine():
         """
         Initialize the database collections, schema, and indexes.
         """
+        self.log.info("Try to initialize MongoDB.")
+
+        if not CFG[TRACE_ONLY] :
+            self.log.info("Db initialization non performed - Trace Only mode")
+            return
+        self.log.info("Db initialization started")
         dbname = CFG[DBNAME]                
         # Clean DB, security, schema and index
         if CFG[CLEAN_DB]:
             self.log.warning(f"Collection {dbname}, schema and index deletion.")
-            self.db.drop_collection(DOCNAME)
+            self.db.drop_collection(CFG[DOCNAME])
             self.log.warning(f"All roles of Mongodb deletion.")
             self.db.command("dropAllRolesFromDatabase")
 
         
         
         # exit function if not first run
-        if DOCNAME in self.db.list_collection_names():
-            self.log.info(f"Collection {DOCNAME} already exists, no modification applied.")
+        if CFG[DOCNAME] in self.db.list_collection_names():
+            self.log.info(f"Collection {CFG[DOCNAME]} already exists, no modification applied.")
             return
 
         try:
             schema = self.fm.build_mongodb_schema()
-            self.db.create_collection(DOCNAME, validator=schema)
-            self.log.info(f"Collection {DOCNAME} created with JSON Schema validation.")
+            self.db.create_collection(CFG[DOCNAME], validator=schema)
+            self.log.info(f"Collection {CFG[DOCNAME]} created with JSON Schema validation.")
         except pymongo.errors.CollectionInvalid as e:
             self.log.warning(f"Error creating collection: {e}")
             return
         
-        collection = self.db[DOCNAME]
+        collection = self.db[CFG[DOCNAME]]
 
         for index in self.fm.get_indexes():
             try:
@@ -155,17 +184,25 @@ class Engine():
 
 
 
-    def get_db(self):
+    def connect_db(self):
         """
         Get the MongoDB database connection.
         """
         # MongoDB connection via pymongo
+        self.log.info("Try to connect to MongoDB.")
         try:
-
             cnxstr = f"mongodb://{CFG[USERNAME]}:{CFG[PASSWORD]}@{CFG[HOST]}:{CFG[PORT]}/"
             client = pymongo.MongoClient(cnxstr)
+            # check if mongodb prod server
+            self.db = client[CFG[PROD_DBNAME]]
+            coll_names = self.db.list_collection_names()
+            if not CFG[DOCKMODE] and CFG[DOCNAME] in coll_names:
+                handle_critical(f"Connected to Production MongoDB server not allowed")
+                return
+
             self.db = client[CFG[DBNAME]]
             self.log.info("Connection established.")
+            self.log.info(BLANK)
         except pymongo.errors.OperationFailure as e:
             handle_critical(f"No connection : review your .env settings", e)
     
@@ -177,33 +214,16 @@ class Engine():
         # Main function for migrating DataFrame to MongoDB
         self.log.info(f"Execution options - start: {CFG[START]}, limit: {CFG[LIMIT]}, TRACE_ONLY: {CFG[TRACE_ONLY]}")
 
-        self.log.info("Try to connect to MongoDB.")
-        self.get_db()
-        self.log.info(BLANK)
+        self.connect_db()
+        self.initialize_db()
 
-        if not CFG[TRACE_ONLY] :
-            self.log.info("Db initialization started")
-            self.initialize_db()
-            self.log.info(BLANK)
-        else:
-            self.log.info("Db initialization non performed - Trace Only mode")
-
-        self.log.info("Cleaning data before migration...")
         self.clean_df()
-        self.log.info(BLANK)
 
-        self.log.info("Removing  duplicates...")
+        self.log.info("Remove  duplicates...")
         self.df = self.make_unic_df()
-        self.log.info(BLANK)
 
-        count_inserted = 0
-        total = len(self.df)
-        self.log.info(f"Total rows after cleaning and merging: {total}")
+        self.upsert_rows()
 
-        for i, row in self.df.iterrows():
-            self.upsert_row(row.to_dict())
-            count_inserted += 1
-        self.log.info(f"Migration complete: {count_inserted} documents inserted out of {total} rows processed.")
         self.log.info(BLANK)
 
 
