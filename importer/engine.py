@@ -1,4 +1,4 @@
-from manager import * 
+from importer.manager import * 
 import pandas as pd
 import os
 import pymongo
@@ -57,7 +57,7 @@ class Engine():
                 df = source
                 self.log.info(f"DataFrame loaded")
             elif isinstance(source,dict):
-                df = pd.DataFrame(source)                
+                df = pd.DataFrame(source,dtype=str)                
                 self.log.info(f"Dictionnary loaded")
             elif os.path.exists(source) and (source[-4:]).lower() == ".csv":
                 df = pd.read_csv(source,dtype=str)
@@ -68,7 +68,7 @@ class Engine():
             self.log.error("DF loader : Error with your entry, must be a dataframe, a dictionnary or a csv file" )
             exit()
         if CFG[START] or CFG[LIMIT]:
-            source = source.iloc[CFG[START]:CFG[START]+CFG[LIMIT]]
+            df = df.iloc[CFG[START]:CFG[START]+CFG[LIMIT]]
         self.df = df
         self.log.info(BLANK)
         return self.df
