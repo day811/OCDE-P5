@@ -48,22 +48,27 @@ class Engine():
         self.fm = FieldManager()
 
 
-    def load_df(self, df):
+    def load_df(self, source):
         """
         Load a DataFrame or CSV file into the engine.
         """
         try :
-            if isinstance(df,pd.DataFrame):
+            if isinstance(source,pd.DataFrame):
+                df = source
                 self.log.info(f"DataFrame loaded")
-            elif os.path.exists(df) and (df[-4:]).lower() == ".csv":
-                df = pd.read_csv(df,dtype=str)
+            elif isinstance(source,dict):
+                df = pd.DataFrame(source)                
+                self.log.info(f"Dictionnary loaded")
+            elif os.path.exists(source) and (source[-4:]).lower() == ".csv":
+                df = pd.read_csv(source,dtype=str)
+                self.log.info(f"CSV {source} loaded")
             else:
-               self.log.error("DF loader : Error with your entry, must be a dataframe or a csv file" )
+               self.log.error("DF loader : Error with your entry, must be a dataframe, a dictionnary or a csv file" )
         except Exception as e:
-            self.log.error("DF loader : Error with your entry, must be a dataframe or a csv file" )
+            self.log.error("DF loader : Error with your entry, must be a dataframe, a dictionnary or a csv file" )
             exit()
         if CFG[START] or CFG[LIMIT]:
-            df = df.iloc[CFG[START]:CFG[START]+CFG[LIMIT]]
+            source = source.iloc[CFG[START]:CFG[START]+CFG[LIMIT]]
         self.df = df
         self.log.info(BLANK)
         return self.df
