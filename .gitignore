@@ -2,7 +2,7 @@
 .venv/*
 sources/*
 __pycache__
-
+*settings.json
 *.log
 /.env
 /.test.env
