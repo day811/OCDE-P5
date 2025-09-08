@@ -73,7 +73,6 @@ class FieldManager():
         """
         self.log = logging.getLogger(self.__class__.__name__)
         self.fields = {}
-#        self.sdocs = []
         self.convert_dft = None
         self.convert_fmt_date =  "%Y-%m-%d"
         self.float_round = 2
@@ -81,9 +80,6 @@ class FieldManager():
         fields_def = load_yaml("data/fields_settings.yml")
         for fieldname, params in fields_def.items():
             self.fields[fieldname] = Field(fieldname,params)
-#            sdoc = self.fields[fieldname].get_param(DOC)
-#            if sdoc not in self.sdocs : 
-#                self.sdocs.append(sdoc)
         self.log.info(f"Field Manager starts : loading fields params")
 
     def convert_df_values(self, df:pd.DataFrame,fieldname:str):
@@ -200,7 +196,8 @@ class FieldManager():
         """
         Get the index fields for a MongoDB document.
         """
-        return [f"{field.get_param(DOC)}.{field.camel_name}" for field in self.fields.values() if field.get_param(INDEX) and (field.get_param(DOC) == document_name or field.get_param(PARENT) == document_name)]
+        return [f"{field.get_param(DOC)}.{field.camel_name}" for field in self.fields.values() 
+                if field.get_param(INDEX) and (field.get_param(DOC) == document_name or field.get_param(PARENT) == document_name)]
     
     def get_masterdoc_list(self):
         return [field.get_param(DOC) for field in self.fields.values() if field.get_param(PARENT) == ROOT]
