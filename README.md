@@ -43,9 +43,12 @@ The solution is fully containerized using Docker and Docker Compose, ensuring co
 ├── data/
 │   ├── healthcare_dataset.csv    # Source data
 │   ├── fields_settings.yml       # Field definitions (configurable)
+│   ├── mongodb_roles.yml         # MongoDB roles (configurable)
 ├── docs/
-│   ├── keynotes.md    # notes about project and aws
+│   ├── keynotes.md    # notes about project 
+│   ├── AWS_keynotes.md    # notes about AWS mongoDB services  
 ├── importer/
+│   ├── __init__.py          # __init__ py file for import abilities
 │   ├── Dockerfile            # Container configuration
 │   ├── importer.py         # Main application entry point
 │   ├── engine.py          # Core migration engine
@@ -189,32 +192,44 @@ These files can be modified without rebuilding containers:
 #### Field Configuration (`data/fields_settings.yml`)
 
 ```yaml
-Name:
-  DOC: "root"
-  TYPE: "str"
-  PRIMARY: true
-  REQUIRED: true
+_id:
+  parent : root
+  doc: "care"
+  type: "str"
 
-Age:
-  DOC: "demographics"  
-  TYPE: "int"
-  INDEX: true
-  ERRORMASK: "isage"
-  
+Name:
+  parent : care
+  doc: "patient"
+  type: "str"
+  primary: care
+  index: true
+
 BloodType:
-  DOC: "medical"
-  TYPE: "str" 
-  ERRORMASK: "isbloodtype"
+  parent : care
+  doc: "patient"
+  type: "str" 
+  error_mask : is_blood_tpe
+  required: false
+
+Doctor:
+  parent : care
+  doc: "admission"  
+  primary : care 
+  type: "str"
+  index: true
+  replace : null
+  
 ```
 
 **Field Parameters:**
-- `DOC`: Document section (root, demographics, medical, etc.)
-- `TYPE`: Data type (str, int, float, date)
-- `PRIMARY`: Primary key field
-- `INDEX`: Create index on field
-- `REQUIRED`: Required field
-- `ERRORMASK`: Validation function
-- `REPLACE`: Replacement value for invalid data
+- `parent` : documents collection name, root is master document
+- `doc`: Document section (care, patient, admission, billing.)
+- `type`: Data type (str, int, float, date)
+- `primary`: is part of the primary key of the given doc 
+- `index`: Create index on field
+- `required`: Required field
+- `error_mask`: Validation function
+- `replace`: Replacement value for invalid data
 
 #### MongoDB Roles Configuration (`data/mongodb_roles.yml`)
 
