@@ -1,4 +1,4 @@
-from engine import *
+from importer.engine import *
 import os
 from dotenv import load_dotenv
 import logging
@@ -22,7 +22,6 @@ if not dockmode and os.path.exists(".test.env"):
 # Loads environment variables from .env
 CFG = {
     DBNAME : dbname,
-
     USERNAME : os.getenv("MONGO_INITDB_ROOT_USERNAME",None),
     PASSWORD : os.getenv("MONGO_INITDB_ROOT_PASSWORD", None),
     HOST : os.getenv("MONGO_HOST", "mongo") if dockmode else "localhost" ,

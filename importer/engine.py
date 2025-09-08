@@ -1,4 +1,4 @@
-from manager import * 
+from importer.manager import * 
 import pandas as pd
 import os
 import pymongo
