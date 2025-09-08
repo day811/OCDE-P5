@@ -5,7 +5,8 @@ import logging
 import yaml
 
 PK_ID = "_id"          
-DOC = "doc"          
+DOC = "doc"
+PARENT = "parent"          
 TYPE = "type"         
 INDEX = "index"       
 PRIMARY = "primary"     
@@ -40,13 +41,14 @@ class Field():
     Represents a field definition in the dataframe and the MongoDB document.
     """
 
-    dft_values = {DOC : None,
-                  TYPE : "str",
-                  INDEX : False,
-                  PRIMARY : False,
-                  REPLACE : False,
-                  ERROR_MASK : "is_na",
-                  REQUIRED : True,
+    dft_values = {
+                DOC : None,
+                TYPE : "str",
+                INDEX : False,
+                PRIMARY : False,
+                REPLACE : False,
+                ERROR_MASK : "is_na",
+                REQUIRED : True,
                   }
 
     def __init__(self, name, params):
@@ -71,7 +73,7 @@ class FieldManager():
         """
         self.log = logging.getLogger(self.__class__.__name__)
         self.fields = {}
-        self.sdocs = []
+#        self.sdocs = []
         self.convert_dft = None
         self.convert_fmt_date =  "%Y-%m-%d"
         self.float_round = 2
@@ -79,9 +81,9 @@ class FieldManager():
         fields_def = load_yaml("data/fields_settings.yml")
         for fieldname, params in fields_def.items():
             self.fields[fieldname] = Field(fieldname,params)
-            sdoc = self.fields[fieldname].get_param(DOC)
-            if sdoc not in self.sdocs : 
-                self.sdocs.append(sdoc)
+#            sdoc = self.fields[fieldname].get_param(DOC)
+#            if sdoc not in self.sdocs : 
+#                self.sdocs.append(sdoc)
         self.log.info(f"Field Manager starts : loading fields params")
 
     def convert_df_values(self, df:pd.DataFrame,fieldname:str):
@@ -156,31 +158,36 @@ class FieldManager():
         """
         Get the MongoDB document representation for a DataFrame row.
         """
-        doc={}
-        for sdocname in self.sdocs:
-            sdoc={}
-            for field in self.fields.values():
-                field_doc = field.get_param(DOC)
-                if  field_doc == sdocname:
-                    if field.name == PK_ID:
-                        pk_values = "_".join(self.get_pk_values(row))
-                        value = hashlib.sha256(pk_values.encode("utf-8")).hexdigest()   
-                    else:
-                        value = row[field.name]
-                    sdoc[field.camel_name] = value
-            if sdocname == ROOT:
-                doc = sdoc
-            else:
-                doc[sdocname] = sdoc
+        jsondoc={}
 
-        return doc , pk_values
+        for field in self.fields.values():
+            if field.name == PK_ID:
+                document = field.get_param(DOC)
+                pk_values = "_".join(self.get_pk_values(row,document))
+                value = hashlib.sha256(pk_values.encode("utf-8")).hexdigest()   
+            else:
+                value = row[field.name]
+            
+            doc = field.get_param(DOC) 
+            parent = field.get_param(PARENT) 
+            
+            
+            if parent == ROOT:
+                if doc not in jsondoc.keys(): jsondoc[doc] = {}
+                jsondoc[doc][field.camel_name] = value
+            else:
+                if doc not in jsondoc[parent].keys(): jsondoc[parent][doc] = {}
+                jsondoc[parent][doc][field.camel_name] = value
+
+
+        return jsondoc , pk_values
     
 
-    def get_pk_values(self,row:dict):
+    def get_pk_values(self,row:dict, document):
         """
         Return a list the primary key values for a MongoDB document.
         """
-        pk_values = [str(row[field.name] ) for field in self.fields.values() if field.get_param(PRIMARY)]
+        pk_values = [str(row[field.name] ) for field in self.fields.values() if field.get_param(PRIMARY)== document]
         return pk_values
 
     def get_pk_fields(self):
@@ -189,11 +196,14 @@ class FieldManager():
         """ 
         return [field.name for field in self.fields.values() if field.get_param(PRIMARY)]
     
-    def get_indexes(self):
+    def get_indexes(self,document_name):
         """
         Get the index fields for a MongoDB document.
         """
-        return [f"{field.get_param(DOC)}.{field.camel_name}" for field in self.fields.values() if field.get_param(INDEX)]
+        return [f"{field.get_param(DOC)}.{field.camel_name}" for field in self.fields.values() if field.get_param(INDEX) and (field.get_param(DOC) == document_name or field.get_param(PARENT) == document_name)]
+    
+    def get_masterdoc_list(self):
+        return [field.get_param(DOC) for field in self.fields.values() if field.get_param(PARENT) == ROOT]
     
     def convert_to_int(self, val):
         """
@@ -231,64 +241,65 @@ class FieldManager():
         """
         Transform fields dict in mongodb schema
         """
+        # Mapping Python type names to MongoDB BSON types
+        type_map = {
+            'str': 'string',
+            'int': 'int',
+            'float': 'double',
+            'date': 'date'
+        }
+
+        def build_properties(node):
+            properties = {}
+            required = []
+            for key, value in node.items():
+                # Direct type field
+                if isinstance(value, dict) and 'type' in value:
+                    properties[key] = {'bsonType': type_map.get(value['type'], value['type'])}
+                    if value.get('required', False):
+                        required.append(key)
+                # Nested object field
+                elif isinstance(value, dict):
+                    sub_properties, sub_required = build_properties(value)
+                    properties[key] = {
+                        'bsonType': 'object',
+                        'properties': sub_properties,
+                        'required': sub_required
+                    }
+                    required.append(key)
+            return properties, required
+
+        json_schema = {}
         schema_dict = self.get_mongodb_dict()
-        docs = {}
-        root_required = set()
-        root_properties = {}
 
-        for field, info in schema_dict.items():
-            doc = info['doc']
-            ftype = self.map_type(info['type'])
-            required = info.get('required', False)
-
-            # Root case  (ex : _id)
-            if doc == 'root':
-                root_properties[field] = {"bsonType": ftype}
-                if required:
-                    root_required.add(field)
-                continue
-
-            if doc not in docs:
-                docs[doc] = {
-                    "bsonType": "object",
-                    "properties": {},
-                    "required": []
-                }
-            docs[doc]["properties"][field] = {"bsonType": ftype}
-            if required:
-                docs[doc]["required"].append(field)
-                root_required.add(doc)
-
-        # Build final schema
-        schema = {
-            "$jsonSchema": {
-                "bsonType": "object",
-                "required": list(root_required),
-                "properties": {
-                    **root_properties,
-                    **docs
+        for masterdocname, masterdoc in schema_dict.items():
+            properties, required = build_properties(masterdoc)
+            json_schema[masterdocname] = {
+                '$jsonSchema': {
+                    'bsonType': 'object',
+                    'required': required,
+                    'properties': properties
                 }
             }
-        }
-        return schema
-
-    def map_type(self,t):
-        mapping = {
-            "str": "string",
-            "int": "int",
-            "float": "double",
-            "date": "date",
-            "bool": "bool",
-            "boolean": "bool"
-        }
-        return mapping.get(t.lower(), "string")
+        
+        return json_schema
 
     def get_mongodb_dict(self):
-        dict = {}
-        needed= [DOC,TYPE,REQUIRED]
+        needed= [TYPE,REQUIRED]
+        jsondoc = {}
         for field in self.fields.values():
+            doc = field.get_param(DOC) 
+            parent = field.get_param(PARENT) 
             field_params ={}
             for param in needed:
                 field_params[param] = field.get_param(param)
-            dict[field.camel_name] = field_params
-        return dict
+            
+            if parent == ROOT:
+                if doc not in jsondoc.keys(): jsondoc[doc] = {}
+                jsondoc[doc][field.camel_name] = field_params
+            else:
+                if doc not in jsondoc[parent].keys(): jsondoc[parent][doc] = {}
+                jsondoc[parent][doc][field.camel_name] = field_params
+
+
+        return jsondoc 

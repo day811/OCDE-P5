@@ -1,4 +1,4 @@
-from importer.manager import * 
+from manager import * 
 import pandas as pd
 import os
 import pymongo
@@ -17,7 +17,7 @@ LIMIT = "limit"
 TRACE_ONLY = "trace_only"
 CLEAN_DB = "clean_db"
 DOCKMODE = "dockmode"
-DOCNAME  = "docname"
+
 
 
 CFG= {}
@@ -121,18 +121,20 @@ class Engine():
         """
         Upsert a dataframe row into the MongoDB collection.
         """
-        doc , pk = self.fm.get_doc(row)
-        self.log.debug(f"Document constructed: {doc}")
-        if not CFG[TRACE_ONLY]:
-            try:
-                result = self.db.care.replace_one({PK_ID: doc[PK_ID]}, doc, upsert=True)
-                operation = "inserted" if result.upserted_id else "updated"
-                self.log.info(f"Document {doc[PK_ID]} {operation}: {pk}")
-            except Exception as e:
-                self.log.warning(f"Error inserting row {e}  /n{pk}")
-        else:
-            self.log.info("Document non upserted - Trace Only mode")
-            
+        jsondoc , pk = self.fm.get_doc(row)
+        for document_name, document in jsondoc.items():
+
+            self.log.debug(f"Document constructed: {document}")
+            if not CFG[TRACE_ONLY]:
+                try:
+                    result = self.db[document_name].replace_one({PK_ID: document[PK_ID]}, document, upsert=True)
+                    operation = "inserted" if result.upserted_id else "updated"
+                    self.log.info(f"{document_name} collection : {document[PK_ID]} {operation}: {pk}")
+                except Exception as e:
+                    self.log.warning(f"Error inserting row {e}  /n{pk}")
+            else:
+                self.log.info("Document non upserted - Trace Only mode")
+                
 
     def initialize_db(self):
         """
@@ -140,42 +142,46 @@ class Engine():
         """
         self.log.info("Try to initialize MongoDB.")
 
-        if not CFG[TRACE_ONLY] :
+        if CFG[TRACE_ONLY] :
             self.log.info("Db initialization non performed - Trace Only mode")
             return
         self.log.info("Db initialization started")
+
+        json_schema = self.fm.build_mongodb_schema()
         dbname = CFG[DBNAME]                
         # Clean DB, security, schema and index
+
+        for docname, schema_doc in json_schema.items():
+
+            if CFG[CLEAN_DB]:
+                self.log.warning(f"Collection {docname}, schema and index deletion.")
+                self.db.drop_collection(docname)
+       
+            # exit function if not first run
+            if docname in self.db.list_collection_names():
+                self.log.info(f"Collection {docname} already exists, no modification applied.")
+                return
+
+        
+            try:
+                self.db.create_collection(docname, validator=schema_doc)
+                self.log.info(f"Collection {docname} created with JSON Schema validation.")
+            except pymongo.errors.CollectionInvalid as e:
+                self.log.warning(f"Error creating collection {docname} : {e}")
+                return
+            
+
+            for index in self.fm.get_indexes(docname):
+                try:
+                    self.db[docname].create_index(index)
+                    self.log.info(f"Index {index} created.")
+                except pymongo.errors.OperationFailure as e:
+                    self.log.warning(f"Failed to create index {index}.", e)
+
+        
         if CFG[CLEAN_DB]:
-            self.log.warning(f"Collection {dbname}, schema and index deletion.")
-            self.db.drop_collection(CFG[DOCNAME])
             self.log.warning(f"All roles of Mongodb deletion.")
             self.db.command("dropAllRolesFromDatabase")
-
-        
-        
-        # exit function if not first run
-        if CFG[DOCNAME] in self.db.list_collection_names():
-            self.log.info(f"Collection {CFG[DOCNAME]} already exists, no modification applied.")
-            return
-
-        try:
-            schema = self.fm.build_mongodb_schema()
-            self.db.create_collection(CFG[DOCNAME], validator=schema)
-            self.log.info(f"Collection {CFG[DOCNAME]} created with JSON Schema validation.")
-        except pymongo.errors.CollectionInvalid as e:
-            self.log.warning(f"Error creating collection: {e}")
-            return
-        
-        collection = self.db[CFG[DOCNAME]]
-
-        for index in self.fm.get_indexes():
-            try:
-                collection.create_index(index)
-                self.log.info(f"Index {index} created.")
-            except pymongo.errors.OperationFailure as e:
-                self.log.warning(f"Failed to create index {index}.", e)
-
         replace_dict= {"${dbname}": dbname}
         data = load_yaml("data/mongodb_roles.yml", replace=replace_dict)
         roles = data['roles']
@@ -201,7 +207,8 @@ class Engine():
             # check if mongodb prod server
             self.db = client[CFG[PROD_DBNAME]]
             coll_names = self.db.list_collection_names()
-            if not CFG[DOCKMODE] and CFG[DOCNAME] in coll_names:
+            first_collection = self.fm.get_masterdoc_list()[0]
+            if not CFG[DOCKMODE] and first_collection in coll_names:
                 handle_critical(f"Connected to Production MongoDB server not allowed")
                 return
 

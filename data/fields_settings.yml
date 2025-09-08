@@ -1,82 +1,99 @@
+# parent      : sting                 root for master document , master document name if nested
 # doc         : string                (sub)/document name  ROOT for master document
 # type        (str,int,float,date)    default : "str"      atribute type
 # index       (true/false)            default : false      if true, attribute is also an index
-# primary       (true/false)          default : false      if true, attribute is part if Primary Key
+# primary       (true/false)          default : false      if present, the field is part of the given doc primary key 
 # replace       (true/false)          default : false      if false exclude document from migration else replace value string or null
 # mask          mask error method     default : "is_na"    must exists in manager.py FieldManager class
 # required      (true/false)          default : true       if required in DBMongo schema validation
 
 "_id":
-        doc : root
+        parent : root
+        doc : care
 "Name" :   
+        parent : care
         doc : patient
         index : true
-        primary : true
+        primary : care
        
 "Age" : 
+        parent : care
         doc : patient
         type : int
         replace : null
         error_mask : is_age
                 
 "Gender" : 
+        parent : care
         doc : patient 
         index : true
-        primary : true 
+        primary : care 
         error_mask : is_gender
         
 "Blood Type" : 
+        parent : care
         doc : patient 
         replace : null 
         error_mask : is_blood_type
                 
 "Date of Admission" : 
+        parent : care
         doc : admission 
         type : date 
-        primary : true
+        primary : care
                         
 "Doctor" : 
+        parent : care
         doc : admission 
         index : true 
-        primary : true
+        primary : care
         
 "Hospital" :   
+        parent : care
         doc : admission 
         index : true 
-        primary : true
+        primary : care
                 
 "Room Number" : 
+        parent : care
         doc : admission 
         type : int
         replace : null
                         
 "Admission Type" : 
+        parent : care
         doc : admission 
         index : true
                         
 "Discharge Date" : 
+        parent : care
         doc : admission 
         type : date 
         replace : null
                         
 "Insurance Provider" : 
+        parent : care
         doc : billing 
         replace : null
                         
 "Billing Amount" : 
+        parent : care
         doc : billing 
         type : float
         replace : null 
                         
 "Medical Condition" : 
+        parent : care
         doc : observation 
         index : true 
-        primary : true
+        primary : care
                          
 "Medication" : 
+        parent : care
         doc : observation
                  
 "Test Results" : 
+        parent : care
         doc : observation
                            
         

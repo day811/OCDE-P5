@@ -1,4 +1,4 @@
-from importer.engine import *
+from engine import *
 import os
 from dotenv import load_dotenv
 import logging
@@ -34,7 +34,6 @@ CFG = {
     CLEAN_DB : get_bool(os.getenv("CLEAN_DB", "0")) and not dockmode,
     PROD_DBNAME : prod_dbname,
     DOCKMODE : dockmode,
-    DOCNAME : "care"
 }
 
 
