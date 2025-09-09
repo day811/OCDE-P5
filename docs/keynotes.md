@@ -545,3 +545,184 @@ Références principales :
 6. [https://www.geeksforgeeks.org/devops/difference-between-docker-and-virtualization/](https://www.geeksforgeeks.org/devops/difference-between-docker-and-virtualization/)
 7. [https://www.reddit.com/r/learnprogramming/comments/vh2kgn/can_someone_eli5_what_docker_is_and_how_it/](https://www.reddit.com/r/learnprogramming/comments/vh2kgn/can_someone_eli5_what_docker_is_and_how_it/)
 8. [https://www.youtube.com/watch?v=a1M_thDTqmU](https://www.youtube.com/watch?v=a1M_thDTqmU)
+
+# Différences techniques entre Host et Bridge dans Docker
+
+## Architecture réseau
+
+### Mode Bridge
+- **Création d'un réseau virtuel isolé** : Docker crée un pont logiciel (généralement `docker0`) sur l'hôte qui fonctionne comme un commutateur virtuel[1][2]
+- **Namespace réseau séparé** : Chaque conteneur obtient son propre namespace réseau avec une interface virtuelle Ethernet (`veth`) connectée au pont[3][4]
+- **Adressage IP privé** : Les conteneurs reçoivent des adresses IP privées dans un sous-réseau dédié (typiquement 172.17.0.0/16)[5]
+- **NAT (Network Address Translation)** : Le trafic sortant passe par une couche de traduction d'adresses pour accéder au réseau externe[4][3]
+
+### Mode Host
+- **Partage de la pile réseau hôte** : Le conteneur utilise directement le namespace réseau de l'hôte, sans isolation[6][7]
+- **Pas d'interface virtuelle** : Aucune interface réseau virtuelle n'est créée pour le conteneur[8]
+- **Adresse IP partagée** : Le conteneur utilise la même adresse IP que l'hôte[9][10]
+- **Accès direct aux interfaces** : Le conteneur a accès à toutes les interfaces réseau de l'hôte[8]
+
+## Performances réseau
+
+### Bridge
+- **Overhead NAT** : La traduction d'adresses introduit une latence supplémentaire pour le trafic sortant[11][4]
+- **Couche de virtualisation** : L'interface virtuelle ajoute une couche d'abstraction qui peut réduire les performances[11]
+- **Routage interne** : Le trafic entre conteneurs passe par le pont virtuel[2]
+
+### Host
+- **Performance native** : Aucune couche de virtualisation réseau, les performances sont équivalentes à l'exécution directe sur l'hôte[3][4]
+- **Pas de NAT** : Élimination complète de la surcharge de traduction d'adresses[8]
+- **Accès direct** : Les applications dans le conteneur accèdent directement à la pile réseau du système[6]
+
+## Isolation et sécurité
+
+### Bridge
+- **Isolation forte** : Séparation complète du réseau hôte et des autres conteneurs (sauf sur le même réseau bridge)[1][8]
+- **Contrôle des ports** : Mapping explicite des ports nécessaire pour l'exposition (`-p` ou `ports:`)[7]
+- **Règles iptables** : Docker gère automatiquement les règles de pare-feu pour l'isolation[2]
+
+### Host
+- **Isolation nulle** : Aucune séparation réseau entre le conteneur et l'hôte[10][8]
+- **Risques de sécurité** : Le conteneur peut accéder à tous les services réseau de l'hôte[4]
+- **Conflits de ports** : Risque de collision si plusieurs conteneurs ou l'hôte utilisent le même port[4][8]
+
+## Communication inter-conteneurs
+
+### Bridge
+- **DNS automatique** : Les conteneurs sur le même réseau bridge personnalisé peuvent se résoudre par nom[12][6]
+- **Segmentation** : Possibilité de créer plusieurs réseaux bridge pour isoler différents groupes de conteneurs[4]
+- **Service discovery** : Docker fournit la découverte de services automatique sur les réseaux personnalisés[2]
+
+### Host
+- **Communication limitée** : Les conteneurs en mode host ne peuvent communiquer entre eux que via les ports exposés sur l'hôte[7]
+- **Pas de DNS interne** : Aucun mécanisme de résolution de noms entre conteneurs[7]
+- **Localhost = hôte** : `localhost` fait référence à l'hôte, pas au conteneur[7]
+
+## Cas d'usage techniques
+
+### Bridge recommandé pour :
+- Applications multi-conteneurs nécessitant une communication interne sécurisée
+- Environnements de développement et de test
+- Applications nécessitant un contrôle précis de l'exposition des ports
+- Déploiements où l'isolation de sécurité est critique[8][4]
+
+### Host recommandé pour :
+- Applications nécessitant des performances réseau maximales
+- Services de monitoring réseau ou VPN nécessitant un accès direct à la pile réseau
+- Applications legacy nécessitant un accès direct aux interfaces réseau
+- Cas où la latence réseau doit être minimisée[4][8]
+
+## Limitations techniques
+
+### Bridge
+- Limité à un seul hôte Docker (pas de communication multi-hôtes natif)
+- Overhead de performance due au NAT et à la virtualisation
+- Configuration plus complexe pour l'exposition de services[8]
+
+### Host
+- Disponible uniquement sur Linux (limité sur Windows/macOS avec Docker Desktop)
+- Impossibilité de mapper ou remapper les ports
+- Risques de sécurité élevés en environnement de production
+- Incompatible avec l'orchestration moderne (Docker Swarm, Kubernetes)[11][7]
+
+## Synthèse technique
+
+Le mode **Bridge** privilégie la sécurité, l'isolation et la flexibilité au détriment des performances, tandis que le mode **Host** optimise les performances au détriment de la sécurité et de l'isolation. Le choix entre ces deux modes dépend des exigences spécifiques de performance, de sécurité et d'architecture de l'application.
+
+[1](https://docs.docker.com/engine/network/drivers/bridge/)
+[2](https://www.docker.com/blog/understanding-docker-networking-drivers-use-cases/)
+[3](https://bunny.net/academy/computing/what-is-docker-networking/)
+[4](https://alredho.com/understanding-docker-networking-host-vs-bridge/)
+[5](https://www.virtualizationhowto.com/2025/07/docker-networking-tutorial-bridge-vs-macvlan-vs-overlay-for-home-labs/)
+[6](https://www.linkedin.com/pulse/mastering-docker-network-modes-bridge-host-none-beginners-akash-gupta-xizzf)
+[7](https://stackoverflow.com/questions/56825258/difference-between-docker-bridge-and-host-driver)
+[8](https://www.cloudthat.com/resources/blog/docker-networking-exploring-bridge-host-and-overlay-modes)
+[9](https://spacelift.io/blog/docker-networking)
+[10](https://stackoverflow.com/questions/73106724/whats-the-different-between-host-mode-and-bridge-mode)
+[11](https://www.nicelydev.com/docker/reseau-host-bridge)
+[12](https://dev.to/caffinecoder54/docker-networking-deep-dive-understanding-bridge-host-and-overlay-networks-1kac)
+
+En mode **bridge** avec Docker Compose (réseau bridge personnalisé ou défaut), il est tout à fait possible d’accéder au conteneur MongoDB depuis l’hôte via MongoDB Compass à condition que :
+
+1. Le port MongoDB soit **exposé (publied)** via la directive `ports` dans le docker-compose.yml, par exemple :
+   ```yaml
+   ports:
+     - "27017:27017"
+   ```
+   Cela mappe le port 27017 du conteneur vers le port 27017 de la machine hôte.
+
+2. La configuration MongoDB dans le conteneur autorise les connexions sur toutes les interfaces réseau, donc le fichier `mongod.conf` doit contenir :
+   ```
+   net:
+     port: 27017
+     bindIp: 0.0.0.0
+   ```
+   Par défaut, MongoDB se lie seulement à `127.0.0.1` (localhost à l’intérieur du conteneur), ce qui empêche les connexions externes.
+
+***
+
+### Points importants pour la connexion avec Compass
+
+- Dans Compass, la chaîne de connexion est alors du type `mongodb://localhost:27017` (si le port est mappé localement).
+- Il faut que le conteneur soit bien démarré avec le mapping de port.
+- Le firewall ou antivirus ne doit pas bloquer ce port sur la machine hôte.
+
+***
+
+### Résumé
+
+| Condition                              | Résultat                          |
+|--------------------------------------|----------------------------------|
+| Port MongoDB exposé via `ports`      | Accès possible depuis hôte        |
+| bindIp dans mongod.conf = 0.0.0.0    | MongoDB accepte connexions externes|
+| Pas d'exposition de port             | Impossible d’accéder depuis hôte  |
+| Mode réseau `none`                   | Pas d’accès réseau même si port exposé |
+
+***
+
+### Exemple d'extrait docker-compose.yml pour MongoDB accessible via Compass :
+
+```yaml
+services:
+  mongo:
+    image: mongo:latest
+    ports:
+      - "27017:27017"
+    network_mode: bridge
+    volumes:
+      - ./mongod.conf:/etc/mongod.conf
+```
+
+Puis, dans `mongod.conf` (monté dans le conteneur) :
+
+```yaml
+net:
+  port: 27017
+  bindIp: 0.0.0.0
+```
+
+Avec cela, vous pouvez connecter MongoDB Compass à `mongodb://localhost:27017`.
+
+***
+
+En résumé, en mode bridge avec exposition de port et configuration adaptée, l’accès MongoDB Compass fonctionne parfaitement depuis l’hôte.
+
+[1](https://stackoverflow.com/questions/49493688/connecting-to-mongodb-inside-a-docker-with-mongodb-compass-gui)
+[2](https://www.reddit.com/r/docker/comments/184872y/how_to_connect_to_a_mongodb_container_using/)
+[3](https://www.mongodb.com/docs/compass/connect/)
+[4](https://forums.docker.com/t/how-mongodb-work-in-docker-how-to-connect-with-mongodb/44763)
+[5](https://www.youtube.com/watch?v=yMyTKddQ17E)
+[6](https://tsmx.net/docker-local-mongodb/)
+[7](https://www.reddit.com/r/docker/comments/1kneww6/compass_does_not_connect_with_my_docker_compose/)
+[8](https://www.youtube.com/watch?v=JWpdm9Ebbr4)
+[9](https://www.techrepublic.com/article/how-to-connect-compass-gui-docker-deployed-mongodb-database/)
+[10](https://stackoverflow.com/questions/45461017/connect-to-host-mongodb-from-docker-container)
+[11](https://www.mongodb.com/community/forums/t/mongodb-cannot-connect-to-docker-host-machine/216227)
+[12](https://forums.docker.com/t/how-to-access-host-machines-mongo-db-inside-docker-container/100628)
+[13](https://blog.devops.dev/mongodb-setup-101-from-containers-to-compass-for-absolute-beginners-af80b47746b5)
+[14](https://www.reddit.com/r/docker/comments/cyznru/help_cannot_connect_to_mongo_server_running_on/)
+[15](https://www.mongodb.com/community/forums/t/compass-cant-connect-to-mongodb-running-in-docker/12351)
+[16](https://geshan.com.np/blog/2023/03/mongodb-docker-compose/)
+[17](https://www.mongodb.com/compatibility/docker)
+[18](https://btholt.github.io/complete-intro-to-containers/networking/)
+[19](https://docs.docker.com/engine/network/drivers/bridge/)
