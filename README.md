@@ -45,25 +45,26 @@ The solution is fully containerized using Docker and Docker Compose, ensuring co
 │   ├── fields_settings.yml       # Field definitions (configurable)
 │   ├── mongodb_roles.yml         # MongoDB roles (configurable)
 ├── docs/
-│   ├── keynotes.md    # notes about project 
-│   ├── AWS_keynotes.md    # notes about AWS mongoDB services  
+│   ├── keynotes.md               # notes about project 
+│   ├── AWS_keynotes.md           # notes about AWS mongoDB services  
+│   ├── migration_healthcare.log  # sample log file
 ├── importer/
-│   ├── __init__.py          # __init__ py file for import abilities
-│   ├── Dockerfile            # Container configuration
-│   ├── importer.py         # Main application entry point
-│   ├── engine.py          # Core migration engine
-│   ├── manager.py         # Field management and validation
-│   └── requirements.txt   # Python dependencies
+│   ├── __init__.py               # __init__ py file for import abilities
+│   ├── Dockerfile                # Container configuration
+│   ├── importer.py               # Main application entry point
+│   ├── engine.py                 # Core migration engine
+│   ├── manager.py                # Field management and validation
+│   └── requirements.txt          # Python dependencies
 │   └── mongodb_roles.yml         # Database roles configuration (configurable)
 ├── notebooks/
 │   ├── exploratory_analysis.ipynb    # jupyter notebook for data exploration
-├── logs/                  # Application logs
-├── .template.env          # Production environment template
-├── .template.test.env     # Test environment template
-├── launch_mongodb_test.sh # Test MongoDB container launcher
-├── Dockerfile            # Container configuration
-├── docker-compose.yml    # Multi-container setup
-└── requirements.txt      # global python dependencies including notebooks need
+├── logs/                         # Application logs
+├── .template.env                 # Production environment template
+├── .template.test.env            # Test environment template
+├── launch_mongodb_test.sh        # Test MongoDB container launcher
+├── Dockerfile                    # Container configuration
+├── docker-compose.yml            # Multi-container setup
+└── requirements.txt              # global python dependencies including notebooks need
 ```
 
 ### Core Components
