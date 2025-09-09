@@ -1,0 +1,66 @@
+2025-09-09 14:03:05,996 - INFO - **************************************************
+2025-09-09 14:06:55,907 - INFO - Logger configured
+2025-09-09 14:06:55,907 - INFO - **************************************************
+2025-09-09 14:06:55,907 - INFO - Importer Engine starts 
+2025-09-09 14:06:55,912 - INFO - Field Manager starts : loading fields params
+2025-09-09 14:06:55,912 - INFO - **************************************************
+2025-09-09 14:06:55,912 - INFO - Starting migration to DB healthcare
+2025-09-09 14:06:55,912 - INFO - Running environment : PRODUCTION
+2025-09-09 14:06:56,014 - INFO - CSV data/healthcare_dataset.csv loaded
+2025-09-09 14:06:56,015 - INFO - 
+2025-09-09 14:06:56,015 - INFO - Execution options - start: 0, limit: 10, TRACE_ONLY: False
+2025-09-09 14:06:56,015 - INFO - Try to connect to MongoDB.
+2025-09-09 14:06:56,028 - INFO - Connection established.
+2025-09-09 14:06:56,028 - INFO - 
+2025-09-09 14:06:56,028 - INFO - Try to initialize MongoDB.
+2025-09-09 14:06:56,028 - INFO - Db initialization started
+2025-09-09 14:06:56,036 - INFO - Collection care created with JSON Schema validation.
+2025-09-09 14:06:56,039 - INFO - Index patient.name created.
+2025-09-09 14:06:56,044 - INFO - Index patient.gender created.
+2025-09-09 14:06:56,047 - INFO - Index admission.doctor created.
+2025-09-09 14:06:56,049 - INFO - Index admission.hospital created.
+2025-09-09 14:06:56,052 - INFO - Index admission.admissionType created.
+2025-09-09 14:06:56,054 - INFO - Index observation.medicalCondition created.
+2025-09-09 14:06:56,061 - INFO - Role healthcareOperator created.
+2025-09-09 14:06:56,061 - INFO - Role healthcareManager created.
+2025-09-09 14:06:56,062 - INFO - Role administrativeOperator created.
+2025-09-09 14:06:56,062 - INFO - Role administrativeManager created.
+2025-09-09 14:06:56,063 - INFO - Role accountingManager created.
+2025-09-09 14:06:56,063 - INFO - Clean data before migration...
+2025-09-09 14:06:56,064 - INFO - No anomaly detected in column Name.
+2025-09-09 14:06:56,064 - INFO - No anomaly detected in column Age.
+2025-09-09 14:06:56,064 - INFO - No anomaly detected in column Gender.
+2025-09-09 14:06:56,064 - INFO - No anomaly detected in column Blood Type.
+2025-09-09 14:06:56,065 - INFO - No anomaly detected in column Date of Admission.
+2025-09-09 14:06:56,066 - INFO - No anomaly detected in column Doctor.
+2025-09-09 14:06:56,066 - INFO - No anomaly detected in column Hospital.
+2025-09-09 14:06:56,066 - INFO - No anomaly detected in column Room Number.
+2025-09-09 14:06:56,067 - INFO - No anomaly detected in column Admission Type.
+2025-09-09 14:06:56,067 - INFO - No anomaly detected in column Discharge Date.
+2025-09-09 14:06:56,068 - INFO - No anomaly detected in column Insurance Provider.
+2025-09-09 14:06:56,068 - INFO - No anomaly detected in column Billing Amount.
+2025-09-09 14:06:56,068 - INFO - No anomaly detected in column Medical Condition.
+2025-09-09 14:06:56,069 - INFO - No anomaly detected in column Medication.
+2025-09-09 14:06:56,069 - INFO - No anomaly detected in column Test Results.
+2025-09-09 14:06:56,069 - INFO - 
+2025-09-09 14:06:56,069 - INFO - Remove  duplicates...
+2025-09-09 14:06:56,070 - INFO - No duplicate detected in the dataset.
+2025-09-09 14:06:56,070 - INFO - 
+2025-09-09 14:06:56,070 - INFO - **************************************************
+2025-09-09 14:06:56,070 - INFO - Migration start with 10 documents after cleaning and merging.
+2025-09-09 14:06:56,071 - INFO - care collection : d6b1efc28091c9149de11eddeef8c2cd1d2df5ae0eb27cef27f728b5e74e0f37 inserted: Bobby JacksOn_Male_2024-01-31 00:00:00_Matthew Smith_Sons and Miller_Cancer
+2025-09-09 14:06:56,072 - INFO - care collection : ab5e024fab0d7c5ffb06dbc1493fe3755da83c9aeafaf70f21d7c199c2c6acd7 inserted: LesLie TErRy_Male_2019-08-20 00:00:00_Samantha Davies_Kim Inc_Obesity
+2025-09-09 14:06:56,072 - INFO - care collection : a79245a04023e2361ecf8dc1b39bf2df5706f911a27cb0a50a4b2c9df4a680c2 inserted: DaNnY sMitH_Female_2022-09-22 00:00:00_Tiffany Mitchell_Cook PLC_Obesity
+2025-09-09 14:06:56,072 - INFO - care collection : 34725bf17f6eabce53e96ddadbb82d1ccda8d99858d8b25f8d69dceff1fadcab inserted: andrEw waTtS_Female_2020-11-18 00:00:00_Kevin Wells_Hernandez Rogers and Vang,_Diabetes
+2025-09-09 14:06:56,073 - INFO - care collection : 12f62c9bfb6dd6a28bc6d2ce6a61c6c983526eb5e2d225444d9f3082205e3f8d inserted: adrIENNE bEll_Female_2022-09-19 00:00:00_Kathleen Hanna_White-White_Cancer
+2025-09-09 14:06:56,073 - INFO - care collection : 902de99bb93f2b2f2a391ed8865ca5fcd3631973bf4977182f952f28bbd33864 inserted: EMILY JOHNSOn_Male_2023-12-20 00:00:00_Taylor Newton_Nunez-Humphrey_Asthma
+2025-09-09 14:06:56,073 - INFO - care collection : 4ece9c28f5210345cbf951fc61b67b705bf885276eaa8d197e609c99da6b9820 inserted: edwArD EDWaRDs_Female_2020-11-03 00:00:00_Kelly Olson_Group Middleton_Diabetes
+2025-09-09 14:06:56,074 - INFO - care collection : 976e10a77ae5acb8ebb291b053da03456a652f2cce360f19a89949a88f4438ae inserted: CHrisTInA MARtinez_Female_2021-12-28 00:00:00_Suzanne Thomas_Powell Robinson and Valdez,_Cancer
+2025-09-09 14:06:56,074 - INFO - care collection : 20786f4cbe81ad6ced2fa4e185e155ef8fe5a18849f4dc9bcf1815a818b7f2f9 inserted: JASmINe aGuIlaR_Male_2020-07-01 00:00:00_Daniel Ferguson_Sons Rich and_Asthma
+2025-09-09 14:06:56,074 - INFO - care collection : 29c9b9062c2ebe936baf41ec4cfe9b73e2502a5f74caff542c4759804670b12b inserted: ChRISTopher BerG_Female_2021-05-23 00:00:00_Heather Day_Padilla-Walker_Cancer
+2025-09-09 14:06:56,075 - INFO - Migration complete: 10 documents inserted out of 10 rows processed.
+2025-09-09 14:06:56,075 - INFO - 
+2025-09-09 14:06:56,075 - INFO - 
+2025-09-09 14:06:56,075 - INFO - End of migration to DB healthcare
+2025-09-09 14:06:56,075 - INFO - 
+2025-09-09 14:06:56,075 - INFO - **************************************************
