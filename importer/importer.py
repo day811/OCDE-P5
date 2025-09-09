@@ -1,4 +1,6 @@
-from engine import *
+#importer/importer.py
+
+from importer.engine import *
 import os
 from dotenv import load_dotenv
 import logging
@@ -19,19 +21,18 @@ if not dockmode and os.path.exists(".test.env"):
     if dbname == prod_dbname:
         dbname = f"test{prod_dbname}"
 
-# Loads environment variables from .env
+# Loads environment variables from `.env`(+`.test.env`)
 CFG = {
     DBNAME : dbname,
-
     USERNAME : os.getenv("MONGO_INITDB_ROOT_USERNAME",None),
     PASSWORD : os.getenv("MONGO_INITDB_ROOT_PASSWORD", None),
     HOST : os.getenv("MONGO_HOST", "mongo") if dockmode else "localhost" ,
     PORT: int(os.getenv("MONGO_PORT", 27017)),
     DEBUG_MODE : get_bool(os.getenv("MIGRATION_DEBUG", "0")),
-    START : int(os.getenv("DEBUG_START", 0)) if  not dockmode else 0,
-    LIMIT : int(os.getenv("DEBUG_LIMIT", 0)) if  not dockmode else 0,
+    START : int(os.getenv("START", 0)),
+    LIMIT : int(os.getenv("LIMIT", 0)),
     TRACE_ONLY : get_bool(os.getenv("DEBUG_TRACE_ONLY", "1")) and not dockmode,
-    CLEAN_DB : get_bool(os.getenv("CLEAN_DB", "0")) and not dockmode,
+    CLEAN_DB : get_bool(os.getenv("CLEAN_DB", "0")) and not dockmode,  # ONLY IN TEST MODE !!!
     PROD_DBNAME : prod_dbname,
     DOCKMODE : dockmode,
 }
@@ -46,7 +47,7 @@ logging.basicConfig(
 logging.info("Logger configured")
 
 if not CFG[USERNAME] or not CFG[PASSWORD]:
-    logging.critical("Invalid username or password in your .env, must be both filled")
+    logging.critical("Invalid username and/or password in your .env, must be both filled")
     handle_critical("Consult readme about .env, environment variables and setup process")
 
 
@@ -55,6 +56,7 @@ importer = Engine(CFG)
 if __name__ == "__main__":
     logging.info(STARS)
     logging.info(f"Starting migration to DB {CFG[DBNAME]}")
+    logging.info(f"Running environment : {'PRODUCTION' if dockmode else 'TESTING'}")
     
     importer.load_df("data/healthcare_dataset.csv")
     importer.import_df()
@@ -62,4 +64,4 @@ if __name__ == "__main__":
     logging.info(f"End of migration to DB {CFG[DBNAME]}")
     logging.info(BLANK)
     logging.info(STARS)
-    logging.info(BLANK)
+    logging.info(BLANK,BLANK,BLANK)

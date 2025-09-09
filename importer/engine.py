@@ -1,4 +1,6 @@
-from manager import * 
+#importer/manager.py
+
+from importer.manager import * 
 import pandas as pd
 import os
 import pymongo
@@ -50,7 +52,7 @@ class Engine():
 
     def load_df(self, source):
         """
-        Load a DataFrame or CSV file into the engine.
+        Load a DataFrame, Dictionary or CSV file into the engine.
         """
         try :
             if isinstance(source,pd.DataFrame):
@@ -105,10 +107,13 @@ class Engine():
 
 
     def upsert_rows(self):
+        """
+        Iterate dataframe rows to upsert
+        """
         count_inserted = 0
         total = len(self.df)
         self.log.info(STARS)
-        self.log.info(f"Migration start with {total} documents fter cleaning and merging.")
+        self.log.info(f"Migration start with {total} documents after cleaning and merging.")
         for i, row in self.df.iterrows():
             self.upsert_row(row.to_dict())
             count_inserted += 1
@@ -138,7 +143,7 @@ class Engine():
 
     def initialize_db(self):
         """
-        Initialize the database collections, schema, and indexes.
+        Initialize the database collections, schema, indexes and roles.
         """
         self.log.info("Try to initialize MongoDB.")
 
@@ -149,15 +154,16 @@ class Engine():
 
         json_schema = self.fm.build_mongodb_schema()
         dbname = CFG[DBNAME]                
-        # Clean DB, security, schema and index
 
+        # browse through master collections to delete
         for docname, schema_doc in json_schema.items():
 
+            # Clean DB, security, schema and index , only in test mode
             if CFG[CLEAN_DB]:
-                self.log.warning(f"Collection {docname}, schema and index deletion.")
+                self.log.warning(f"Collection '{docname}': data, schema and index deletion.")
                 self.db.drop_collection(docname)
        
-            # exit function if not first run
+            # exit function if collection already exists in db
             if docname in self.db.list_collection_names():
                 self.log.info(f"Collection {docname} already exists, no modification applied.")
                 return
@@ -199,7 +205,6 @@ class Engine():
         """
         Get the MongoDB database connection.
         """
-        # MongoDB connection via pymongo
         self.log.info("Try to connect to MongoDB.")
         try:
             cnxstr = f"mongodb://{CFG[USERNAME]}:{CFG[PASSWORD]}@{CFG[HOST]}:{CFG[PORT]}/"
@@ -221,9 +226,8 @@ class Engine():
     
     def import_df(self):
         """
-        Extract, transform and load a DataFrame into MongoDB.
+        Transform and load the loaded DataFrame into MongoDB.
         """
-        # Main function for migrating DataFrame to MongoDB
         self.log.info(f"Execution options - start: {CFG[START]}, limit: {CFG[LIMIT]}, TRACE_ONLY: {CFG[TRACE_ONLY]}")
 
         self.connect_db()

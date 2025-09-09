@@ -1,7 +1,13 @@
+#docker-compose.yml
+networks:
+  healthcare-net:
+    driver: bridge
 services:
   mongo:
     image: mongo:latest
     container_name: ${MONGO_HOST}
+    networks:
+      - healthcare-net
     ports:
       - "${MONGO_PORT}:27017"
     environment:
@@ -12,6 +18,8 @@ services:
       - ${MONGO_VOLUME}:/data/db
   importer:
     build: ./importer
+    networks:
+      - healthcare-net
     env_file:
       - .env
     volumes:

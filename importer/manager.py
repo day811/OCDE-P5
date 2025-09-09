@@ -1,3 +1,5 @@
+#importer/managerer.py
+
 from datetime import datetime
 import pandas as pd
 import hashlib
@@ -250,12 +252,12 @@ class FieldManager():
             properties = {}
             required = []
             for key, value in node.items():
-                # Direct type field
+                # Detect field structure holding 'type' key
                 if isinstance(value, dict) and 'type' in value:
                     properties[key] = {'bsonType': type_map.get(value['type'], value['type'])}
                     if value.get('required', False):
                         required.append(key)
-                # Nested object field
+                # Nested sub document, recursive call
                 elif isinstance(value, dict):
                     sub_properties, sub_required = build_properties(value)
                     properties[key] = {
@@ -282,6 +284,10 @@ class FieldManager():
         return json_schema
 
     def get_mongodb_dict(self):
+        """
+        Get hierarchical MongoDB dictionary
+        """
+        
         needed= [TYPE,REQUIRED]
         jsondoc = {}
         for field in self.fields.values():
