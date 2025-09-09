@@ -104,6 +104,8 @@ MONGOINITDBROOTPASSWORD=your_password
 MONGOHOST=mongo
 MONGOPORT=27017
 MONGOVOLUME=mongoproddata
+START=0
+LIMIT=100
 ```
 
 4. Start production services:
@@ -127,9 +129,10 @@ MONGOHOST=mongo
 MONGOPORT=27017
 MONGOVOLUME=mongotestdata
 MIGRATIONDEBUG=True
-DEBUGSTART=0
-DEBUGLIMIT=100
+START=0
+LIMIT=100
 DEBUGTRACEONLY=False
+CLEAN_DB=False
 ```
 
 3. Launch test MongoDB container:
@@ -181,14 +184,14 @@ cp .template.test.env .test.env
 | `MONGOPORT` | MongoDB port | 27017 | 27017 | ✗ |
 | `MONGOVOLUME` | Docker volume name | mongoproddata | mongotestdata | ✓ in prod |
 | `MIGRATIONDEBUG` | Enable debug logging | False | True | ✗ |
-| `DEBUGSTART` | Start row for debug | 0 | 0 | ✗ |
-| `DEBUGLIMIT` | Limit rows for debug | 0 | 100 | ✗ |
+| `START` | Starting row  | 0 | 0 | ✗ |
+| `LIMIT` | Limit rows to process | 0 | 100 | ✗ |
 | `DEBUGTRACEONLY` | Trace mode only | False | False | ✗ |
 | `CLEANDB` | Clean database on start | False | False | ✗ |
 
 ### Dynamic Configuration Files
 
-These files can be modified without rebuilding containers:
+These files can be modified without rebuilding containers but can not be modified in an existing configured database:
 
 #### Field Configuration (`data/fields_settings.yml`)
 
@@ -282,8 +285,8 @@ cd importer/
 
 # Set debug environment variables
 export MIGRATIONDEBUG=True
-export DEBUGSTART=0
-export DEBUGLIMIT=100
+export START=0
+export LIMIT=100
 export DEBUGTRACEONLY=True
 
 python importer.py
@@ -522,7 +525,7 @@ The system includes automated validation for:
 
 # Test with limited dataset
 cd importer/
-DEBUGSTART=0 DEBUGLIMIT=10 DEBUGTRACEONLY=True python importer.py
+START=0 LIMIT=10 DEBUGTRACEONLY=True python importer.py
 
 # Test data validation
 MIGRATIONDEBUG=True python importer.py
