@@ -5,100 +5,114 @@
 # primary       (true/false)          default : false      if present, the field is part of the given doc primary key 
 # replace       (true/false)          default : false      if false exclude document from migration else replace value string or null
 # error_mask    mask error : {function : mask_func, param : func_param     
-#               default  {function : is_na, param = null}    must exists in manager.py FieldManager class (buildin : is_na, is_in, is_inrange,compare)
+#               default  {function : is_na, param = null}  look at FieldManager classes (buildin : is_na, is_in, is_inrange,compare)
 # required      (true/false)          default : true       if required in DBMongo schema validation
 
 "_id":
-        parent : root
-        doc : care
-"Name" :   
-        parent : care
-        doc : patient
-        index : true
-        primary : care
+        parent: root
+        doc: care
+"Name":   
+        parent: care
+        doc: patient
+        index: true
+        primary: care
        
-"Age" : 
-        parent : care
-        doc : patient
-        type : int
-        replace : null
-        error_mask : {function : is_inrange, param : [1,120]}
+"Age": 
+        parent: care
+        doc: patient
+        type: int
+        replace: null
+        error_mask: 
+                function: is_inrange
+                param: [1,120]
                 
-"Gender" : 
-        parent : care
-        doc : patient 
-        index : true
-        primary : care 
-        error_mask : {function : is_in, param : ["Male", "Female"]}
+"Gender": 
+        parent: care
+        doc: patient 
+        index: true
+        primary: care 
+        error_mask: 
+                function: is_in
+                param: ["Male", "Female"]
         
-"Blood Type" : 
-        parent : care
-        doc : patient 
-        replace : null 
-        error_mask : {function : is_in, param : ["A+", "A-", "AB+", "AB-", "B+", "B-", "O+", "O-"]}
+"Blood Type": 
+        parent: care
+        doc: patient 
+        replace: null 
+        error_mask: 
+                function: is_in
+                param: ["A+", "A-", "AB+", "AB-", "B+", "B-", "O+", "O-"]
                 
-"Date of Admission" : 
-        parent : care
-        doc : admission 
-        type : date 
-        primary : care
+"Date of Admission": 
+        parent: care
+        doc: admission 
+        type: date 
+        primary: care
                         
-"Doctor" : 
-        parent : care
-        doc : admission 
-        index : true 
-        primary : care
+"Doctor": 
+        parent: care
+        doc: admission 
+        index: true 
+        primary: care
         
-"Hospital" :   
-        parent : care
-        doc : admission 
-        index : true 
-        primary : care
+"Hospital":   
+        parent: care
+        doc: admission 
+        index: true 
+        primary: care
                 
-"Room Number" : 
-        parent : care
-        doc : admission 
-        type : int
-        replace : null
+"Room Number": 
+        parent: care
+        doc: admission 
+        type: int
+        replace: null
                         
-"Admission Type" : 
-        parent : care
-        doc : admission 
-        index : true
-        error_mask : {function : is_in, param : ['Elective', 'Emergency', 'Urgent']}
+"Admission Type": 
+        parent: care
+        doc: admission 
+        index: true
+        error_mask: 
+                function: is_in
+                param: ['Elective', 'Emergency', 'Urgent']
                         
-"Discharge Date" : 
-        parent : care
-        doc : admission 
-        type : date 
-        replace : null
+"Discharge Date": 
+        parent: care
+        doc: admission 
+        type: date 
+        replace: null
                         
-"Insurance Provider" : 
-        parent : care
-        doc : billing 
-        replace : null
+"Insurance Provider": 
+        parent: care
+        doc: billing 
+        replace: null
                         
-"Billing Amount" : 
-        parent : care
-        doc : billing 
-        type : float
-        replace : null 
-        error_mask : {function : compare, param : {test: gte, value=0}}
+"Billing Amount": 
+        parent: care
+        doc: billing 
+        type: float
+        replace: null 
+        error_mask: 
+                function: compare
+                param: 
+                        test: gte
+                        value: 0
                         
-"Medical Condition" : 
-        parent : care
-        doc : observation 
-        index : true 
-        primary : care
+"Medical Condition": 
+        parent: care
+        doc: observation 
+        index: true 
+        primary: care
                          
-"Medication" : 
-        parent : care
-        doc : observation
+"Medication": 
+        parent: care
+        doc: observation
                  
-"Test Results" : 
-        parent : care
-        doc : observation
-        error_mask : {function : is_in, param : ['Abnormal', 'Inconclusive', 'Normal']}
+"Test Results": 
+        parent: care
+        doc: observation
+        error_mask: 
+                function: is_in
+                param: ['Abnormal', 'Inconclusive', 'Normal']
                            
         
 

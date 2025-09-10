@@ -64,4 +64,4 @@ if __name__ == "__main__":
     logging.info(f"End of migration to DB {CFG[DBNAME]}")
     logging.info(BLANK)
     logging.info(STARS)
-    logging.info(BLANK,BLANK,BLANK)
+    logging.info(BLANK)

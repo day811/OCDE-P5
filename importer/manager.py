@@ -13,7 +13,7 @@ TYPE = "type"
 INDEX = "index"       
 PRIMARY = "primary"     
 REPLACE = "replace"    
-ERROR_MASK = "mask"   
+ERROR_MASK = "error_mask"   
 REQUIRED = "required" 
 MASK_FUNC= "function"
 MASK_PARAM = "param"
@@ -110,13 +110,14 @@ class FieldManager():
         """
         Get the error mask for a DataFrame column based on field validation.
         """
-        mask_func = self.fields[fieldname].get_param(ERROR_MASK)
-        mask_func = mask_func[MASK_FUNC]
-        param = mask_func[MASK_PARAM]
-        mask = getattr(self,mask_func)(df,fieldname,param=None)
+        error_mask = self.fields[fieldname].get_param(ERROR_MASK)
+        mask_func = error_mask[MASK_FUNC]
+        param = error_mask[MASK_PARAM]
+        self.log.info(f"Check column {fieldname} : Error mask function: {error_mask[MASK_FUNC]}, Param : {str(error_mask[MASK_PARAM])}")
+        mask = getattr(self,mask_func)(df,fieldname,param)
         return mask
 
-    def is_na(self,df:pd.DataFrame, fieldname:str,,param=None):
+    def is_na(self,df:pd.DataFrame, fieldname:str,param=None):
         """
         Mask missing values in a DataFrame column.
         """
