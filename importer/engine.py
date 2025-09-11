@@ -54,11 +54,9 @@ class Engine():
         """
         Load a DataFrame, Dictionary or CSV file into the engine.
         """
+        df = pd.DataFrame()
         try :
-            if isinstance(source,pd.DataFrame):
-                df = source
-                self.log.info(f"DataFrame loaded")
-            elif isinstance(source,dict):
+            if isinstance(source,pd.DataFrame) or isinstance(source,dict):
                 df = pd.DataFrame(source,dtype=str)                
                 self.log.info(f"Dictionnary loaded")
             elif os.path.exists(source) and (source[-4:]).lower() == ".csv":
@@ -67,8 +65,14 @@ class Engine():
             else:
                self.log.error("DF loader : Error with your entry, must be a dataframe, a dictionnary or a csv file" )
         except Exception as e:
-            self.log.error("DF loader : Error with your entry, must be a dataframe, a dictionnary or a csv file" )
-            exit()
+            handle_critical("DF loader : Error with your entry, must be a dataframe, a dictionnary or a csv file" )
+        
+        
+        for fieldname in self.fm.fields.keys():
+            if fieldname not in df.columns and not fieldname.startswith("_id"):
+                self.log.critical("DF loader : Error with your entry, field {fieldname} not in the dataframe" )
+                return pd.DataFrame()
+                
         if CFG[START] or CFG[LIMIT]:
             df = df.iloc[CFG[START]:CFG[START]+CFG[LIMIT]]
         self.df = df
@@ -121,7 +125,6 @@ class Engine():
         self.log.info(BLANK)
 
 
-
     def upsert_row(self, row : dict):
         """
         Upsert a dataframe row into the MongoDB collection.
@@ -139,6 +142,7 @@ class Engine():
                     self.log.warning(f"Error inserting row {e}  /n{pk}")
             else:
                 self.log.info("Document non upserted - Trace Only mode")
+        return jsondoc
                 
 
     def initialize_db(self):
@@ -194,11 +198,12 @@ class Engine():
 
         for role in roles:
             try:
+                self.log.debug(f"JSON role : {str(role)} ")
                 self.db.command(role)
                 self.log.info(f"Role {role['createRole']} created.")
             except pymongo.errors.OperationFailure as e:
                 self.log.warning(f"Error during role {role['createRole']} creation :", e)
-
+        return self.db
 
 
     def connect_db(self):
@@ -222,6 +227,7 @@ class Engine():
             self.log.info(BLANK)
         except pymongo.errors.OperationFailure as e:
             handle_critical(f"No connection : review your .env settings", e)
+        return self.db
     
     
     def import_df(self):
