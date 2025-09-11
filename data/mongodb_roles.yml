@@ -3,6 +3,11 @@ roles:
     privileges:
       - resource:
           db: "${dbname}"
+          collection: care
+        actions:
+          - find
+      - resource:
+          db: "${dbname}"
           collection: patient
         actions:
           - find
@@ -20,6 +25,11 @@ roles:
 
   - createRole: healthcareManager
     privileges:
+      - resource:
+          db: "${dbname}"
+          collection: care
+        actions:
+          - find
       - resource:
           db: "${dbname}"
           collection: observation
@@ -44,6 +54,11 @@ roles:
     privileges:
       - resource:
           db: "${dbname}"
+          collection: care
+        actions:
+          - find
+      - resource:
+          db: "${dbname}"
           collection: patient
         actions:
           - find
@@ -61,6 +76,11 @@ roles:
 
   - createRole: administrativeManager
     privileges:
+      - resource:
+          db: "${dbname}"
+          collection: care
+        actions:
+          - find
       - resource:
           db: "${dbname}"
           collection: patient
