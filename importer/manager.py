@@ -13,8 +13,12 @@ TYPE = "type"
 INDEX = "index"       
 PRIMARY = "primary"     
 REPLACE = "replace"    
-ERROR_MASK = "mask"   
+ERROR_MASK = "error_mask"   
 REQUIRED = "required" 
+MASK_FUNC= "function"
+MASK_PARAM = "param"
+TEST = "test"
+VALUE = "value"
 
 ROOT = "root"
 
@@ -49,7 +53,7 @@ class Field():
                 INDEX : False,
                 PRIMARY : False,
                 REPLACE : False,
-                ERROR_MASK : "is_na",
+                ERROR_MASK : {MASK_FUNC: "is_na",MASK_PARAM : None},
                 REQUIRED : True,
                   }
 
@@ -102,35 +106,50 @@ class FieldManager():
         """
         Get the error mask for a DataFrame column based on field validation.
         """
-        mask_func = self.fields[fieldname].get_param(ERROR_MASK)
-        mask = getattr(self,mask_func)(df,fieldname)
+        error_mask = self.fields[fieldname].get_param(ERROR_MASK)
+        mask_func = error_mask[MASK_FUNC]
+        param = error_mask[MASK_PARAM]
+        self.log.debug(f"Check column {fieldname} : Error mask function: {error_mask[MASK_FUNC]}, Param : {str(error_mask[MASK_PARAM])}")
+        mask = getattr(self,mask_func)(df,fieldname,param)
         return mask
 
-    def is_na(self,df:pd.DataFrame, fieldname:str):
+    def is_na(self,df:pd.DataFrame, fieldname:str,param=None):
         """
         Mask missing values in a DataFrame column.
         """
         return df[fieldname].isna()
 
-    def is_age(self, df:pd.DataFrame, fieldname:str):
+    def is_in(self,df:pd.DataFrame, fieldname:str, param ):
         """
-        Mask invalid age values in a DataFrame column.
+        Mask missing values in a DataFrame column.
         """
-        return (df[fieldname] < 0) | (df[fieldname] > 120) | df[fieldname].isna()
+        return ~df[fieldname].isin(param)
+
+    def is_inrange(self,df:pd.DataFrame, fieldname:str, param ):
+        """
+        Mask missing values in a DataFrame column.
+        """
+        min = param[0]
+        max = param[1]
+        mask =  (df[fieldname].isna()) | (df[fieldname] < min)  | (df[fieldname] >= max) 
+
+        return mask
     
-    def is_gender(self,df:pd.DataFrame, fieldname:str):
-        """
-        Mask invalid gender values in a DataFrame column.
-        """
-        return ~df[fieldname].isin(["Male", "Female"])
-    
-    def is_blood_type(self,df:pd.DataFrame, fieldname:str):
-        """
-        Mask invalid blood type values in a DataFrame column.
-        """
-        possible_types = ["A+", "A-", "AB+", "AB-", "B+", "B-", "O+", "O-"]
-        return  ~df[fieldname].isin(possible_types)
- 
+    def compare(self,df:pd.DataFrame, fieldname:str, param ):
+        test = param[TEST]
+        value = param[VALUE]
+        match test:
+            case "gt":
+                return df[fieldname] <= value
+            case "gte":
+                return df[fieldname] < value
+            case "lt":
+                return df[fieldname] >= value
+            case "lte":
+                return df[fieldname] > value
+            case "eq":
+                return df[fieldname] != value
+
     def apply_mask(self,df:pd.DataFrame, fieldname:str):
         """
         Apply error mask to DataFrame column based on field validation.

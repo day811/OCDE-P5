@@ -58,10 +58,12 @@ if __name__ == "__main__":
     logging.info(f"Starting migration to DB {CFG[DBNAME]}")
     logging.info(f"Running environment : {'PRODUCTION' if dockmode else 'TESTING'}")
     
-    importer.load_df("data/healthcare_dataset.csv")
-    importer.import_df()
+    if importer.load_df("data/healthcare_dataset.csv").empty:
+        handle_critical("End of migration due to wrong or empty data source")
+    else:
+        importer.import_df()
     
     logging.info(f"End of migration to DB {CFG[DBNAME]}")
     logging.info(BLANK)
     logging.info(STARS)
-    logging.info(BLANK,BLANK,BLANK)
+    logging.info(BLANK)
