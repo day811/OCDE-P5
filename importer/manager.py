@@ -113,7 +113,7 @@ class FieldManager():
         error_mask = self.fields[fieldname].get_param(ERROR_MASK)
         mask_func = error_mask[MASK_FUNC]
         param = error_mask[MASK_PARAM]
-        self.log.info(f"Check column {fieldname} : Error mask function: {error_mask[MASK_FUNC]}, Param : {str(error_mask[MASK_PARAM])}")
+        self.log.debug(f"Check column {fieldname} : Error mask function: {error_mask[MASK_FUNC]}, Param : {str(error_mask[MASK_PARAM])}")
         mask = getattr(self,mask_func)(df,fieldname,param)
         return mask
 
@@ -135,7 +135,7 @@ class FieldManager():
         """
         min = param[0]
         max = param[1]
-        mask =  (df[fieldname]) < min  | (df[fieldname] >= max)  | (df[fieldname].isna())
+        mask =  (df[fieldname].isna()) | (df[fieldname] < min)  | (df[fieldname] >= max) 
 
         return mask
     
