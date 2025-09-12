@@ -58,8 +58,8 @@ class Field():
                   }
 
     def __init__(self, name, params):
-        self.name = name
-        self.camel_name = (name[0].lower() + name.title().replace(" ", "")[1:]) if self.name != PK_ID else PK_ID
+        self.name = name 
+        self.camel_name = (name[0].lower() + name.title().replace(" ", "")[1:]) if not self.name.startswith(PK_ID) else PK_ID
         self.params = params
 
     def get_param(self, param_name):
@@ -79,7 +79,6 @@ class FieldManager():
         """
         self.log = logging.getLogger(self.__class__.__name__)
         self.fields = {}
-#        self.sdocs = []
         self.convert_dft = None
         self.convert_fmt_date =  "%Y-%m-%d"
         self.float_round = 2
@@ -87,9 +86,6 @@ class FieldManager():
         fields_def = load_yaml("data/fields_settings.yml")
         for fieldname, params in fields_def.items():
             self.fields[fieldname] = Field(fieldname,params)
-#            sdoc = self.fields[fieldname].get_param(DOC)
-#            if sdoc not in self.sdocs : 
-#                self.sdocs.append(sdoc)
         self.log.info(f"Field Manager starts : loading fields params")
 
     def convert_df_values(self, df:pd.DataFrame,fieldname:str):
@@ -182,10 +178,11 @@ class FieldManager():
         jsondoc={}
 
         for field in self.fields.values():
-            if field.name == PK_ID:
+            if field.name.startswith(PK_ID):
                 document = field.get_param(DOC)
                 pk_values = "_".join(self.get_pk_values(row,document))
-                value = hashlib.sha256(pk_values.encode("utf-8")).hexdigest()   
+                row[field.name] = pk_values
+                value = hashlib.sha256(pk_values.encode("utf-8")).hexdigest()
             else:
                 value = row[field.name]
             
@@ -200,6 +197,7 @@ class FieldManager():
                 if doc not in jsondoc[parent].keys(): jsondoc[parent][doc] = {}
                 jsondoc[parent][doc][field.camel_name] = value
 
+            
 
         return jsondoc , pk_values
     
@@ -211,11 +209,11 @@ class FieldManager():
         pk_values = [str(row[field.name] ) for field in self.fields.values() if field.get_param(PRIMARY)== document]
         return pk_values
 
-    def get_pk_fields(self):
+    def get_pk_fields(self, document):
         """
         Get the primary key fields for a MongoDB document.
         """ 
-        return [field.name for field in self.fields.values() if field.get_param(PRIMARY)]
+        return [field.name for field in self.fields.values() if field.get_param(PRIMARY) == document]
     
     def get_indexes(self,document_name):
         """
