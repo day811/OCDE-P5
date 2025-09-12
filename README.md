@@ -43,18 +43,15 @@ The solution is fully containerized using Docker and Docker Compose, ensuring co
 ├── data/
 │   ├── healthcare_dataset.csv    # Source data
 │   ├── fields_settings.yml       # Field definitions (configurable)
-│   ├── mongodb_roles.yml         # MongoDB roles (configurable)
 ├── docs/
-│   ├── keynotes.md               # notes about project 
-│   ├── AWS_keynotes.md           # notes about AWS mongoDB services  
-│   ├── migration_healthcare.log  # sample log file
+│   ├── keynotes.md    # notes about project and aws
 ├── importer/
-│   ├── __init__.py               # __init__ py file for import abilities
-│   ├── Dockerfile                # Container configuration
-│   ├── importer.py               # Main application entry point
-│   ├── engine.py                 # Core migration engine
-│   ├── manager.py                # Field management and validation
-│   └── requirements.txt          # Python dependencies
+│   ├── __init__.py        # Python module mandatory
+│   ├── Dockerfile         # Container configuration
+│   ├── importer.py        # Main application entry point
+│   ├── engine.py          # Core migration engine
+│   ├── manager.py         # Field management and validation
+│   └── requirements.txt   # Python dependencies
 │   └── mongodb_roles.yml         # Database roles configuration (configurable)
 ├── notebooks/
 │   ├── exploratory_analysis.ipynb    # jupyter notebook for data exploration
@@ -108,8 +105,6 @@ MONGOINITDBROOTPASSWORD=your_password
 MONGOHOST=mongo
 MONGOPORT=27017
 MONGOVOLUME=mongoproddata
-START=0
-LIMIT=100
 ```
 
 4. Start production services:
@@ -133,10 +128,9 @@ MONGOHOST=mongo
 MONGOPORT=27017
 MONGOVOLUME=mongotestdata
 MIGRATIONDEBUG=True
-START=0
-LIMIT=100
+DEBUGSTART=0
+DEBUGLIMIT=100
 DEBUGTRACEONLY=False
-CLEAN_DB=False
 ```
 
 3. Launch test MongoDB container:
@@ -188,44 +182,56 @@ cp .template.test.env .test.env
 | `MONGOPORT` | MongoDB port | 27017 | 27017 | ✗ |
 | `MONGOVOLUME` | Docker volume name | mongoproddata | mongotestdata | ✓ in prod |
 | `MIGRATIONDEBUG` | Enable debug logging | False | True | ✗ |
-| `START` | Starting row  | 0 | 0 | ✗ |
-| `LIMIT` | Limit rows to process | 0 | 100 | ✗ |
+| `DEBUGSTART` | Start row for debug | 0 | 0 | ✗ |
+| `DEBUGLIMIT` | Limit rows for debug | 0 | 100 | ✗ |
 | `DEBUGTRACEONLY` | Trace mode only | False | False | ✗ |
 | `CLEANDB` | Clean database on start | False | False | ✗ |
 
 ### Dynamic Configuration Files
 
-These files can be modified without rebuilding containers but can not be modified in an existing configured database:
+These files can be modified without rebuilding containers:
 
 #### Field Configuration (`data/fields_settings.yml`)
 
 ```yaml
-Name:
-  DOC: "root"
-  TYPE: "str"
-  PRIMARY: true
-  REQUIRED: true
-
-Age:
-  DOC: "demographics"  
-  TYPE: "int"
-  INDEX: true
-  ERRORMASK: "isage"
-  
-BloodType:
-  DOC: "medical"
-  TYPE: "str" 
-  ERRORMASK: "isbloodtype"
+"_id_care":
+        parent: root
+        doc: care
+        primary: billing
+"Name":   
+        parent: care
+        doc: patient
+        index: true
+        primary: care
+       
+"Age": 
+        parent: care
+        doc: patient
+        type: int
+        replace: null
+        error_mask: 
+                function: is_inrange
+                param: [1,120]
+                
+"Gender": 
+        parent: care
+        doc: patient 
+        index: true
+        primary: care 
+        error_mask: 
+                function: is_in
+                param: ["Male", "Female"]
 ```
 
 **Field Parameters:**
-- `DOC`: Document section (root, demographics, medical, etc.)
-- `TYPE`: Data type (str, int, float, date)
-- `PRIMARY`: Primary key field
-- `INDEX`: Create index on field
-- `REQUIRED`: Required field
-- `ERRORMASK`: Validation function
-- `REPLACE`: Replacement value for invalid data
+- `parent`: Document section (root, demographics, medical, etc.)
+- `doc`: Document section (root, demographics, medical, etc.)
+- `type`: Data type (str, int, float, date)
+- `primary`: Member of the Primary key field of the given document
+- `index`: Create index on field
+- `required`: Required field
+- `error_mask`: Validation function 
+- `replace`: Replacement value for invalid data or exclude if False
 
 #### MongoDB Roles Configuration (`data/mongodb_roles.yml`)
 
@@ -277,8 +283,8 @@ cd importer/
 
 # Set debug environment variables
 export MIGRATIONDEBUG=True
-export START=0
-export LIMIT=100
+export DEBUGSTART=0
+export DEBUGLIMIT=100
 export DEBUGTRACEONLY=True
 
 python importer.py
@@ -525,7 +531,7 @@ The system includes automated validation for:
 
 # Test with limited dataset
 cd importer/
-DEBUGSTART=0 DEBUGLIMIT=10 DEBUGTRACEONLY=True python importer.py
+python importer.py
 
 # Test data validation
 MIGRATION_DEBUG=True python importer.py
