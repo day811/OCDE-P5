@@ -8,16 +8,6 @@ roles:
           - find
       - resource:
           db: "${dbname}"
-          collection: patient
-        actions:
-          - find
-      - resource:
-          db: "${dbname}"
-          collection: admission
-        actions:
-          - find
-      - resource:
-          db: "${dbname}"
           collection: observation
         actions:
           - find
@@ -38,16 +28,6 @@ roles:
           - insert
           - update
           - remove
-      - resource:
-          db: "${dbname}"
-          collection: patient
-        actions:
-          - find
-      - resource:
-          db: "${dbname}"
-          collection: admission
-        actions:
-          - find
     roles: []
 
   - createRole: administrativeOperator
@@ -55,16 +35,6 @@ roles:
       - resource:
           db: "${dbname}"
           collection: care
-        actions:
-          - find
-      - resource:
-          db: "${dbname}"
-          collection: patient
-        actions:
-          - find
-      - resource:
-          db: "${dbname}"
-          collection: admission
         actions:
           - find
       - resource:
@@ -81,18 +51,6 @@ roles:
           collection: care
         actions:
           - find
-      - resource:
-          db: "${dbname}"
-          collection: patient
-        actions:
-          - find
-          - insert
-          - update
-          - remove
-      - resource:
-          db: "${dbname}"
-          collection: admission
-        actions:
           - find
           - insert
           - update
@@ -107,24 +65,3 @@ roles:
           - remove
     roles: []
 
-  - createRole: accountingManager
-    privileges:
-      - resource:
-          db: "${dbname}"
-          collection: patient
-        actions:
-          - find
-      - resource:
-          db: "${dbname}"
-          collection: admission
-        actions:
-          - find
-      - resource:
-          db: "${dbname}"
-          collection: billing
-        actions:
-          - find
-          - insert
-          - update
-          - remove
-    roles: []
