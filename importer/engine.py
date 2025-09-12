@@ -86,7 +86,7 @@ class Engine():
         self.log.info("Clean data before migration...")
 
         for fieldname in self.fm.fields :
-            if fieldname != PK_ID:
+            if not fieldname.startswith(PK_ID):
                 self.fm.convert_df_values(self.df,fieldname)      
                 self.fm.apply_mask(self.df,fieldname)
         self.log.info(BLANK)
@@ -96,7 +96,7 @@ class Engine():
         """
         Make the DataFrame unique by removing duplicates.
         """
-        subset=self.fm.get_pk_fields()
+        subset=self.fm.get_pk_fields('care')
         mask = self.df.duplicated(subset=subset, keep="last")
         duplicated = self.df[mask].sort_values("Name")
         to_delete = len(duplicated)
@@ -130,6 +130,7 @@ class Engine():
         Upsert a dataframe row into the MongoDB collection.
         """
         jsondoc , pk = self.fm.get_doc(row)
+        
         for document_name, document in jsondoc.items():
 
             self.log.debug(f"Document constructed: {document}")
@@ -174,6 +175,8 @@ class Engine():
 
         
             try:
+                self.log.debug(f"Collection {docname} JSON Schema validation : ")
+                self.log.debug(schema_doc)
                 self.db.create_collection(docname, validator=schema_doc)
                 self.log.info(f"Collection {docname} created with JSON Schema validation.")
             except pymongo.errors.CollectionInvalid as e:
@@ -183,6 +186,8 @@ class Engine():
 
             for index in self.fm.get_indexes(docname):
                 try:
+                    self.log.debug(f"Index de {docname}  : {index} ")
+                    self.log.debug(schema_doc)
                     self.db[docname].create_index(index)
                     self.log.info(f"Index {index} created.")
                 except pymongo.errors.OperationFailure as e:

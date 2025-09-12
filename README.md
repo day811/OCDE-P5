@@ -58,13 +58,17 @@ The solution is fully containerized using Docker and Docker Compose, ensuring co
 │   └── mongodb_roles.yml         # Database roles configuration (configurable)
 ├── notebooks/
 │   ├── exploratory_analysis.ipynb    # jupyter notebook for data exploration
-├── logs/                         # Application logs
-├── .template.env                 # Production environment template
-├── .template.test.env            # Test environment template
-├── launch_mongodb_test.sh        # Test MongoDB container launcher
-├── Dockerfile                    # Container configuration
-├── docker-compose.yml            # Multi-container setup
-└── requirements.txt              # global python dependencies including notebooks need
+├── tests/
+│   ├── sample_dataset.csv # csv sample data file
+│   ├── test_cleandf.py    # clean df test script
+│   ├── test_loaddf.py     # load de test script
+├── logs/                  # Application logs
+├── .template.env          # Production environment template
+├── .template.test.env     # Test environment template
+├── launch_mongodb_test.sh # Test MongoDB container launcher
+├── Dockerfile             # Container configuration
+├── docker-compose.yml     # Multi-container setup
+└── requirements.txt       # global python dependencies including notebooks need
 ```
 
 ### Core Components
@@ -196,44 +200,32 @@ These files can be modified without rebuilding containers but can not be modifie
 #### Field Configuration (`data/fields_settings.yml`)
 
 ```yaml
-_id:
-  parent : root
-  doc: "care"
-  type: "str"
-
 Name:
-  parent : care
-  doc: "patient"
-  type: "str"
-  primary: care
-  index: true
+  DOC: "root"
+  TYPE: "str"
+  PRIMARY: true
+  REQUIRED: true
 
-BloodType:
-  parent : care
-  doc: "patient"
-  type: "str" 
-  error_mask : is_blood_tpe
-  required: false
-
-Doctor:
-  parent : care
-  doc: "admission"  
-  primary : care 
-  type: "str"
-  index: true
-  replace : null
+Age:
+  DOC: "demographics"  
+  TYPE: "int"
+  INDEX: true
+  ERRORMASK: "isage"
   
+BloodType:
+  DOC: "medical"
+  TYPE: "str" 
+  ERRORMASK: "isbloodtype"
 ```
 
 **Field Parameters:**
-- `parent` : documents collection name, root is master document
-- `doc`: Document section (care, patient, admission, billing.)
-- `type`: Data type (str, int, float, date)
-- `primary`: is part of the primary key of the given doc 
-- `index`: Create index on field
-- `required`: Required field
-- `error_mask`: Validation function
-- `replace`: Replacement value for invalid data
+- `DOC`: Document section (root, demographics, medical, etc.)
+- `TYPE`: Data type (str, int, float, date)
+- `PRIMARY`: Primary key field
+- `INDEX`: Create index on field
+- `REQUIRED`: Required field
+- `ERRORMASK`: Validation function
+- `REPLACE`: Replacement value for invalid data
 
 #### MongoDB Roles Configuration (`data/mongodb_roles.yml`)
 
@@ -372,17 +364,23 @@ Automatically created indexes based on `fields_settings.yml`:
 The system creates role-based access control defined in `data/mongodb_roles.yml`:
 
 ```yaml
-readUser:
-  role: "read"
-  privileges:
-    - resource: { db: "healthcare", collection: "care" }
-      actions: ["find"]
+  - createRole: healthcareManager
+    privileges:
+      - resource:
+          db: "${dbname}"
+          collection: care
+        actions:
+          - find
+      - resource:
+          db: "${dbname}"
+          collection: observation
+        actions:
+          - find
+          - insert
+          - update
+          - remove
+    roles: []
 
-writeUser:
-  role: "readWrite"
-  privileges:
-    - resource: { db: "healthcare", collection: "care" }
-      actions: ["find", "insert", "update", "remove"]
 ```
 
 ### Security Features
@@ -514,6 +512,8 @@ The system includes automated validation for:
 - **Age Validation**: Ages between 0-120 years
 - **Gender Validation**: Male/Female values only
 - **Blood Type Validation**: Valid blood type formats
+- **Admission Type**: Normalized values
+- **Test Result**: Normalized values
 - **Missing Values**: Proper handling of null/empty values
 - **Duplicates**: Detection and handling of duplicate records
 
@@ -525,13 +525,13 @@ The system includes automated validation for:
 
 # Test with limited dataset
 cd importer/
-START=0 LIMIT=10 DEBUGTRACEONLY=True python importer.py
+DEBUGSTART=0 DEBUGLIMIT=10 DEBUGTRACEONLY=True python importer.py
 
 # Test data validation
-MIGRATIONDEBUG=True python importer.py
+MIGRATION_DEBUG=True python importer.py
 
 # Test clean installation
-CLEANDB=True python importer.py
+CLEAN_DB=True python importer.py
 ```
 
 ### Configuration Testing

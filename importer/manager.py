@@ -58,8 +58,8 @@ class Field():
                   }
 
     def __init__(self, name, params):
-        self.name = name
-        self.camel_name = (name[0].lower() + name.title().replace(" ", "")[1:]) if self.name != PK_ID else PK_ID
+        self.name = name 
+        self.camel_name = (name[0].lower() + name.title().replace(" ", "")[1:]) if not self.name.startswith(PK_ID) else PK_ID
         self.params = params
 
     def get_param(self, param_name):
@@ -178,10 +178,11 @@ class FieldManager():
         jsondoc={}
 
         for field in self.fields.values():
-            if field.name == PK_ID:
+            if field.name.startswith(PK_ID):
                 document = field.get_param(DOC)
                 pk_values = "_".join(self.get_pk_values(row,document))
-                value = hashlib.sha256(pk_values.encode("utf-8")).hexdigest()   
+                row[field.name] = pk_values
+                value = hashlib.sha256(pk_values.encode("utf-8")).hexdigest()
             else:
                 value = row[field.name]
             
@@ -196,6 +197,7 @@ class FieldManager():
                 if doc not in jsondoc[parent].keys(): jsondoc[parent][doc] = {}
                 jsondoc[parent][doc][field.camel_name] = value
 
+            
 
         return jsondoc , pk_values
     
@@ -207,11 +209,11 @@ class FieldManager():
         pk_values = [str(row[field.name] ) for field in self.fields.values() if field.get_param(PRIMARY)== document]
         return pk_values
 
-    def get_pk_fields(self):
+    def get_pk_fields(self, document):
         """
         Get the primary key fields for a MongoDB document.
         """ 
-        return [field.name for field in self.fields.values() if field.get_param(PRIMARY)]
+        return [field.name for field in self.fields.values() if field.get_param(PRIMARY) == document]
     
     def get_indexes(self,document_name):
         """
