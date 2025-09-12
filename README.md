@@ -43,6 +43,7 @@ The solution is fully containerized using Docker and Docker Compose, ensuring co
 ├── data/
 │   ├── healthcare_dataset.csv    # Source data
 │   ├── fields_settings.yml       # Field definitions (configurable)
+│   ├── mongodb_roles.yml         # MongoDB roles (configurable)
 ├── docs/
 │   ├── keynotes.md    # notes about project and aws
 ├── importer/
@@ -52,7 +53,7 @@ The solution is fully containerized using Docker and Docker Compose, ensuring co
 │   ├── engine.py          # Core migration engine
 │   ├── manager.py         # Field management and validation
 │   └── requirements.txt   # Python dependencies
-│   └── mongodb_roles.yml         # Database roles configuration (configurable)
+│   └── mongodb_roles.yml  # Database roles configuration (configurable)
 ├── notebooks/
 │   ├── exploratory_analysis.ipynb    # jupyter notebook for data exploration
 ├── tests/
@@ -63,7 +64,6 @@ The solution is fully containerized using Docker and Docker Compose, ensuring co
 ├── .template.env          # Production environment template
 ├── .template.test.env     # Test environment template
 ├── launch_mongodb_test.sh # Test MongoDB container launcher
-├── Dockerfile             # Container configuration
 ├── docker-compose.yml     # Multi-container setup
 └── requirements.txt       # global python dependencies including notebooks need
 ```
