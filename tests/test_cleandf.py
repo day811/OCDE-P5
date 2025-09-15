@@ -7,6 +7,22 @@ from importer.importer import *
 from datetime import datetime
 import pandas as pd
 
+DELETED = "#@#deleted#@#"
+
+def compare(df:pd.Series, wanted_list:list):
+   nb = len(wanted_list)
+   for index in range(nb):
+      wanted_value = wanted_list[index]
+      if index in df.index:
+         get_value = None if pd.isna(df[index]) else df[index]
+      else:
+         get_value = DELETED     
+      if wanted_value != get_value : 
+         return False
+   return True
+
+
+
 def test_importer_cleaner():
 # same dataset in csv in datapath
    input_dict1= {'Name': {0: 'LesLie TErRy', 1: 'DaNnY sMitH', 2: 'andrEw waTtS', 3: 'adrIENNE bEll'}, 
@@ -25,22 +41,7 @@ def test_importer_cleaner():
                'Medication': {0: 'Ibuprofen', 1: 'Aspirin', 2: 'Ibuprofen', 3: 'Penicillin'}, 
                'Test Results': {0: 'Inconclusive', 1: '', 2: None, 3: 'Abnormal'}}
    
-   loaded_df=pd.DataFrame()
-   DELETED = "##deleted##"
-
-   def compare(df:pd.Series, wanted_list:list):
-      nb = len(wanted_list)
-      for index in range(nb):
-         wanted_value = wanted_list[index]
-         if wanted_value is None:
-            if not pd.isna(df[index]):
-               return False
-         elif wanted_value == DELETED:
-            if index in df.index:
-               return False
-         elif df[index] != wanted_list[index]:
-            return False
-      return True
+   
    
       #"Age": 
    #     type: int

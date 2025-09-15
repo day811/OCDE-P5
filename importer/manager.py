@@ -85,8 +85,6 @@ class FieldManager():
         
         fields_def = load_yaml("data/fields_settings.yml")
         for fieldname, params in fields_def.items():
-            if fieldname.startswith(PK_ID):
-                fieldname = PK_ID + params[DOC] 
             self.fields[fieldname] = Field(fieldname,params)
         self.log.info(f"Field Manager starts : loading fields params")
 
@@ -194,10 +192,10 @@ class FieldManager():
             
             if parent == ROOT:
                 if doc not in jsondoc.keys(): jsondoc[doc] = {}
-                jsondoc[doc][field.camel_name] = value
+                jsondoc[doc][field.mongo_name] = value
             else:
                 if doc not in jsondoc[parent].keys(): jsondoc[parent][doc] = {}
-                jsondoc[parent][doc][field.camel_name] = value
+                jsondoc[parent][doc][field.mongo_name] = value
 
             
 
@@ -221,7 +219,7 @@ class FieldManager():
         """
         Get the index fields for a MongoDB document.
         """
-        return [f"{field.get_param(DOC)}.{field.camel_name}" for field in self.fields.values() 
+        return [f"{field.get_param(DOC)}.{field.mongo_name}" for field in self.fields.values() 
                 if field.get_param(INDEX) and (field.get_param(DOC) == document_name or field.get_param(PARENT) == document_name)]
     
     def get_masterdoc_list(self):
@@ -322,10 +320,10 @@ class FieldManager():
             
             if parent == ROOT:
                 if doc not in jsondoc.keys(): jsondoc[doc] = {}
-                jsondoc[doc][field.camel_name] = field_params
+                jsondoc[doc][field.mongo_name] = field_params
             else:
                 if doc not in jsondoc[parent].keys(): jsondoc[parent][doc] = {}
-                jsondoc[parent][doc][field.camel_name] = field_params
+                jsondoc[parent][doc][field.mongo_name] = field_params
 
 
         return jsondoc 
