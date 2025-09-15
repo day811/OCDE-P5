@@ -59,7 +59,7 @@ class Field():
 
     def __init__(self, name, params):
         self.name = name 
-        self.camel_name = (name[0].lower() + name.title().replace(" ", "")[1:]) if not self.name.startswith(PK_ID) else PK_ID
+        self.mongo_name = (name[0].lower() + name.title().replace(" ", "")[1:]) if not self.name.startswith(PK_ID) else PK_ID
         self.params = params
 
     def get_param(self, param_name):
@@ -85,6 +85,8 @@ class FieldManager():
         
         fields_def = load_yaml("data/fields_settings.yml")
         for fieldname, params in fields_def.items():
+            if fieldname.startswith(PK_ID):
+                fieldname = PK_ID + params[DOC] 
             self.fields[fieldname] = Field(fieldname,params)
         self.log.info(f"Field Manager starts : loading fields params")
 
@@ -306,7 +308,7 @@ class FieldManager():
 
     def get_mongodb_dict(self):
         """
-        Get hierarchical MongoDB dictionary
+        Get hierarchical MongoDB dictionary for building schema
         """
         
         needed= [TYPE,REQUIRED]

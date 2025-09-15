@@ -8,7 +8,7 @@
 #               default  {function : is_na, param = null}  look at FieldManager classes (buildin : is_na, is_in, is_inrange,compare)
 # required      (true/false)          default : true       if required in DBMongo schema validation
 
-"_id_care":
+"_id":
         parent: root
         doc: care
         primary: billing
@@ -82,7 +82,7 @@
         type: date 
         replace: null
                         
-"_id_billing":
+"_id":
         parent : root
         doc : billing
         primary: observation
@@ -96,7 +96,7 @@
         doc: billing 
         type: float
         replace: null 
-'_id_obs':
+'_id':
         parent: root
         doc: observation                                                
 "Medical Condition": 
