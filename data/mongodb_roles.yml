@@ -27,7 +27,6 @@ roles:
           - find
           - insert
           - update
-          - remove
     roles: []
 
   - createRole: administrativeOperator
@@ -54,7 +53,6 @@ roles:
           - find
           - insert
           - update
-          - remove
       - resource:
           db: "${dbname}"
           collection: billing
@@ -62,6 +60,5 @@ roles:
           - find
           - insert
           - update
-          - remove
     roles: []
 
