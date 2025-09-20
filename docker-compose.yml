@@ -1,7 +1,4 @@
 #docker-compose.yml
-networks:
-  healthcare-net:
-    driver: bridge
 services:
   mongo:
     image: mongo:latest
@@ -13,7 +10,7 @@ services:
     environment:
       MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME}
       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
-      MONGO_DB_NAME: ${MONGO_DB_NAME}                # certains scripts ou apps peuvent l’utiliser
+      MONGO_DB_NAME: ${MONGO_DB_NAME}                
     volumes:
       - ${MONGO_VOLUME}:/data/db
   importer:
@@ -33,3 +30,6 @@ services:
 volumes:
   mongo_prod_data: {}
   mongo_test_data: {}
+networks:
+  healthcare-net:
+    driver: bridge
