@@ -99,6 +99,7 @@ cp .template.env .env
 
 3. Configure your production environment variables in `.env`:
 ```bash
+CSV_PATH="data/healthcare_dataset.csv"
 MONGODBNAME=healthcare
 MONGOINITDBROOTUSERNAME=your_username
 MONGOINITDBROOTPASSWORD=your_password
@@ -119,11 +120,12 @@ docker-compose up -d
 cp .template.test.env .test.env
 ```
 
-2. Configure your test environment variables in `.test.env`:
+2. Configure your test environment variables in `.test.env` to overwrite `.env` ones:
 ```bash
+#CSV_PATH 
 MONGODBNAME=testhc
-MONGOINITDBROOTUSERNAME=your_test_username
-MONGOINITDBROOTPASSWORD=your_test_password
+#MONGOINITDBROOTUSERNAME=your_test_username
+#MONGOINITDBROOTPASSWORD=your_test_password
 MONGOHOST=mongo
 MONGOPORT=27017
 MONGOVOLUME=mongotestdata
@@ -175,6 +177,7 @@ cp .template.test.env .test.env
 
 | Variable | Description | Production Default | Test Default | Required |
 |----------|-------------|-------------------|--------------|----------|
+| `CSV_PATH` | Path do csv data file | "data/healthcare_dataset.csv" | "data/test_hc.csv" | ✓ |
 | `MONGODBNAME` | Database name | healthcare | testhc | ✓ |
 | `MONGOINITDBROOTUSERNAME` | MongoDB root username | - | - | ✓ in prod |
 | `MONGOINITDBROOTPASSWORD` | MongoDB root password | - | - | ✓ in prod |
@@ -196,6 +199,7 @@ These files can be modified without rebuilding containers:
 ```yaml
 "_id_care":
         parent: root
+        type: str
         doc: care
         primary: billing
 "Name":   
