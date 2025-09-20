@@ -95,7 +95,7 @@ class FieldManager():
         ftype = self.fields[fieldname].get_param(TYPE)
         match ftype :
             case "int":
-                df[fieldname] = df[fieldname].apply(self.convert_to_int)
+                df[fieldname] = df[fieldname].apply(self.convert_to_int).astype("Int64")
             case 'float':
                 df[fieldname] = df[fieldname].apply(self.convert_to_float)
             case 'date':
