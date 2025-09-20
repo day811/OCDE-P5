@@ -44,7 +44,7 @@ def replace_placeholder(obj, placeholder, value):
 
 class Field():
     """
-    Represents a field definition in the dataframe and the MongoDB document.
+    Represents a field definition in dataframe and MongoDB document.
     """
 
     dft_values = {
@@ -121,13 +121,15 @@ class FieldManager():
 
     def is_in(self,df:pd.DataFrame, fieldname:str, param ):
         """
-        Mask missing values in a DataFrame column.
+        Mask values in a DataFrame column that do not belong to given list.
+        param = [value1, value2,..,valueN]
         """
         return ~df[fieldname].isin(param)
 
     def is_inrange(self,df:pd.DataFrame, fieldname:str, param ):
         """
-        Mask missing values in a DataFrame column.
+        Mask values in a DataFrame column that are not in a range of value.
+        param = [min, max]
         """
         min = param[0]
         max = param[1]
@@ -136,6 +138,11 @@ class FieldManager():
         return mask
     
     def compare(self,df:pd.DataFrame, fieldname:str, param ):
+        """
+        Mask values that do not respect a comparison 
+        param = {TEST = comparison function in "gt","gte","lt","lte","eq"
+                , VALUE = comparison value}
+        """
         test = param[TEST]
         value = param[VALUE]
         match test:
@@ -204,7 +211,7 @@ class FieldManager():
 
     def get_pk_values(self,row:dict, document):
         """
-        Return a list the primary key values for a MongoDB document.
+        Return a list of the primary key values for a MongoDB document.
         """
         pk_values = [str(row[field.name] ) for field in self.fields.values() if field.get_param(PRIMARY)== document]
         return pk_values
@@ -232,7 +239,7 @@ class FieldManager():
         try:
             return int(val)
         except (ValueError, TypeError) as e:
-            self.log.error(f"Error converting to int for value {val}: {e}")
+            self.log.info(f"Error converting to int for value {val}: {e}")
             return self.convert_dft
 
     def convert_to_float(self, val):
@@ -242,7 +249,7 @@ class FieldManager():
         try:
             return float(val)  # Compatible with MongoDB
         except (ValueError, TypeError) as e:
-            self.log.error(f"Error converting to float for value {val}: {e}")
+            self.log.info(f"Error converting to float for value {val}: {e}")
             return self.convert_dft.round(self.float_round)
 
     def convert_to_date(self, val):
@@ -254,7 +261,7 @@ class FieldManager():
                 return self.convert_dft
             return datetime.strptime(val, self.convert_fmt_date)
         except (ValueError, TypeError) as e:
-            self.log.error(f"Error converting to date for value {val}: {e}")
+            self.log.info(f"Error converting to date for value {val}: {e}")
             return self.convert_dft
 
     def build_mongodb_schema(self):
