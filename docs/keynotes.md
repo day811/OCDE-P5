@@ -726,3 +726,36 @@ En résumé, en mode bridge avec exposition de port et configuration adaptée, l
 [17](https://www.mongodb.com/compatibility/docker)
 [18](https://btholt.github.io/complete-intro-to-containers/networking/)
 [19](https://docs.docker.com/engine/network/drivers/bridge/)
+
+Un « pipeline CI/CD complet » désigne un processus intégré et automatisé de gestion du cycle de vie d’une application, de sa validation à son déploiement en production[CopiesWebduProjet.pdf].
+
+### Définition
+
+**CI** (Intégration Continue) :  
+- Ensemble de pratiques et d’outils permettant de tester automatiquement et fréquemment le code à chaque modification déposée (commit) dans le référentiel (ex. GitHub, GitLab).
+- Il s’agit de lancer des tests unitaires, lint, build (compilation ou packaging), contrôle qualité statique, etc., pour vérifier que chaque évolution est saine et ne casse pas l’existant.
+
+**CD** (Déploiement Continu ou Livraison Continue) :  
+- Une fois testé et validé, le code peut être automatiquement « relié » (livraison continue) ou « déployé » sur un environnement d’intégration ou de production (déploiement continu).
+- Cela inclut le packaging du projet (ex. Docker image), la publication sur un registre, le déploiement sur serveur, la configuration automatique, parfois le rollback en cas d’erreur.
+
+### Pipeline complet : un exemple typique
+
+- **Étapes CI (Intégration continue) :**
+  - Clonage du repository et installation des dépendances
+  - Exécution automatisée des tests (pytest, unit test, integration test…)
+  - Vérification du format, de la sécurité et de la qualité du code
+  - Génération et stockage automatique des artefacts (images Docker, paquets, logs)
+
+- **Étapes CD (Déploiement/Livraison continue) :**
+  - Build et push d’une image Docker sur un registre (DockerHub, AWS ECR, GitLab Registry…)
+  - Déploiement de l’image sur l’environnement cible (cloud, VM, Kubernetes, etc.)
+  - Configuration et orchestration via des outils comme Docker Compose, Helm, Terraform
+  - Monitoring automatisé, alertes sur les erreurs
+
+### Avantages
+- Automatisation, fiabilité, rapidité des déploiements,
+- Réduction des erreurs humaines,
+- Historique des releases et facilitation des retours arrière.
+
+**Un pipeline CI/CD complet** assure que chaque modification du code peut être testée, validée, construite et déployée automatiquement jusqu’en production ou préproduction, en réduisant le temps et les risques associés à la publication de nouvelles versions[CopiesWebduProjet.pdf][P5.txt].
