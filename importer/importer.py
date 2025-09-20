@@ -23,6 +23,7 @@ if not dockmode and os.path.exists(".test.env"):
 
 # Loads environment variables from `.env`(+`.test.env`)
 CFG = {
+    CSV_PATH : os.getenv("CSV_PATH",None),
     DBNAME : dbname,
     USERNAME : os.getenv("MONGO_INITDB_ROOT_USERNAME",None),
     PASSWORD : os.getenv("MONGO_INITDB_ROOT_PASSWORD", None),
@@ -58,7 +59,7 @@ if __name__ == "__main__":
     logging.info(f"Starting migration to DB {CFG[DBNAME]}")
     logging.info(f"Running environment : {'PRODUCTION' if dockmode else 'TESTING'}")
     
-    if importer.load_df("data/healthcare_dataset.csv").empty:
+    if importer.load_df(CFG[CSV_PATH]).empty:
         handle_critical("End of migration due to wrong or empty data source")
     else:
         importer.import_df()

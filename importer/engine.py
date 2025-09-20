@@ -7,6 +7,7 @@ import pymongo
 import logging
 import sys
 
+CSV_PATH = "csv_path"
 PROD_DBNAME = "prod_dbname"
 DBNAME = "dbname"
 USERNAME = "username" 
@@ -127,7 +128,7 @@ class Engine():
 
     def upsert_row(self, row : dict):
         """
-        Upsert a dataframe row into the MongoDB collection.
+        Upsert a dataframe row into the MongoDB collections.
         """
         jsondoc , pk = self.fm.get_doc(row)
         
