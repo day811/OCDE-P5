@@ -433,3 +433,51 @@ Cette approche méthodique garantit une transition réussie vers une infrastruct
 [61](https://www.globalknowledge.com/fr-fr/formation/amazon_web_services/cloud_computing/gk4502)
 [62](https://movebot.io/fr/blog/aws-s3-migrations)
 [63](https://docs.aws.amazon.com/fr_fr/awsaccountbilling/latest/aboutv2/tracking-free-tier-usage.html)
+
+# MongoDB Atlas est généralement recommandé comme choix de service pour les projets nécessitant une base MongoDB sur AWS.
+
+## Raisons principales pour préconiser MongoDB Atlas
+
+- **Service managé complet** : Atlas gère automatiquement la disponibilité, la scalabilité, les mises à jour, la sécurité, les backups, ainsi que la conformité aux normes. Cela réduit fortement la charge opérationnelle.
+- **Compatibilité totale** : Atlas utilise le moteur MongoDB natif, assurant la prise en charge de toutes les fonctionnalités avancées, nouveaux formats de données, transactions distribuées, et extensions propriétaires sans limite.
+- **Support dédié** : En choisissant Atlas, les équipes bénéficient d’un support spécialisé MongoDB, facilitant la résolution rapide des incidents et l’optimisation des performances.
+- **Intégration AWS native** : Atlas est disponible sur la marketplace AWS, ce qui permet une intégration poussée avec IAM, VPC, CloudWatch, et autres outils AWS.
+- **Sécurité et conformité** : Certifications fréquentes, chiffrement robuste et contrôle d’accès granulaire simplifient le respect des réglementations dans les domaines sensibles comme la santé.
+- **Coûts plus élevés mais plus prévisibles** : Les coûts sont plus élevés qu’en auto-hébergement ECS, mais le service inclut la majorité des tâches d’administration critiques automatiquement.
+
+## Inconvénients de l’auto-hébergement ECS
+
+- **Exigences élevées en compétences techniques** : Il faut une équipe expérimentée capable de gérer la configuration, la maintenance, l’optimisation et la sécurité MongoDB, tout en maîtrisant l’écosystème AWS.
+- **Charge opérationnelle accrue** : Les mises à jour, sauvegardes, surveillance, gestion des incidents et scalabilité manuelle doivent être gérées en interne.
+- **Risques accrus** : Mauvaise configuration ou manque d’attention dans la maintenance peut entraîner des interruptions, pertes de données ou slowdowns.
+
+En conclusion, MongoDB Atlas est recommandé lorsque la priorité est une solution robuste, supérieure techniquement et opérationnellement, même avec un budget plus important. L’auto-hébergement ECS convient mieux à des environnements maîtrisés avec des équipes compétentes et recherchant des coûts maîtrisés avec plus de flexibilité.
+
+Cette analyse correspond à la recommandation stratégique présentée dans le projet, privilégiant la qualité de service et la sécurité des données médicales en production.
+
+# Sharding
+La différence entre **"Sharding = Oui"** et **"Sharding = Hash Shard"** réside dans la manière dont la distribution des données est gérée au sein du cluster.
+
+## Sharding = Oui (MongoDB natif ou Atlas)
+- Le sharding natif de MongoDB est un partitionnement horizontal avancé où les données sont divisées en fragments (shards) répartis sur plusieurs serveurs.
+- Le partitionnement peut se faire par différentes clés de sharding, et MongoDB supporte plusieurs stratégies de sharding : 
+  - **Range Sharding** (données réparties par plages de valeurs)
+  - **Hash Sharding** (données réparties par hachage de la clé)
+  - Sharding complexe pouvant répartir la charge de façon très précise.
+- Cela permet une **scalabilité horizontale étendue** avec équilibrage fin de la charge et haute disponibilité.
+- Supporte aussi des configurations de sharding dynamiques avec migration automatique des chunks.
+- Offre une scalabilité et performance optimales pour charges de travail variées.
+
+## Hash Shard (Amazon DocumentDB)
+- Le sharding dans DocumentDB est une **implémentation simplifiée**, souvent limitée au sharding par hachage fixe (hash shard).
+- Les données sont distribuées selon le hash de la clé de partition, ce qui garantit une distribution relativement uniforme.
+- Cette approche est moins flexible, ne supporte pas toutes les stratégies de partitionnement avancées de MongoDB.
+- Le sharding automatique de DocumentDB est plus simplifié, avec moins d’options et de capacités de migration/chunk management dynamique.
+- Peut entraîner des **"hot partitions"** où certaines shards reçoivent plus de charge.
+- En résumé, moins puissant et flexible que le sharding natif MongoDB.
+
+## En résumé
+- Le **sharding natif MongoDB** est plus complet, configurable et performant.
+- Le **hash sharding DocumentDB** est une version simplifiée avec moins de contrôle, conçue pour une scalabilité de base mais avec des limites.
+
+Cette distinction explique pourquoi DocumentDB est mieux adapté pour des workloads moins exigeants en scalabilité fine alors que le sharding natif MongoDB reste la référence pour des déploiements distribués à grande échelle.
