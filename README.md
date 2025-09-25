@@ -150,8 +150,7 @@ pip install -r requirements.txt
 
 2. Run the migration locally:
 ```bash
-cd importer/
-python importer.py
+python -m importer.importer
 ```
 
 ## Configuration
